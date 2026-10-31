@@ -1,0 +1,74 @@
+/* ==========================================================================
+   mudatani99 - Data Anggota & Pemetaan Lahan Stylesheet (css/anggota.css)
+   ========================================================================== */
+@import url('user.css');
+
+/* Quick Submenu Tab Navigation */
+.anggota-tab-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.anggota-tab-btn {
+  padding: 0.55rem 1.05rem;
+  border-radius: var(--radius-lg);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: var(--transition-smooth);
+  background-color: #ffffff;
+  color: var(--clr-slate-600);
+  border: 1px solid var(--clr-slate-200);
+}
+
+.anggota-tab-btn:hover {
+  background-color: var(--clr-slate-50);
+  color: var(--clr-agro-700);
+  border-color: var(--clr-agro-300);
+}
+
+.anggota-tab-btn.active {
+  background: linear-gradient(135deg, var(--clr-agro-600), var(--clr-agro-700));
+  color: #ffffff;
+  border-color: var(--clr-agro-600);
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.22);
+}
+
+/* Alamat Cell */
+.alamat-cell {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  color: var(--clr-slate-700);
+}
+
+.alamat-cell i {
+  color: var(--clr-agro-600);
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+/* Ditanami / Komoditas Tanaman Badge */
+.badge-tanaman-lahan {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.28rem 0.65rem;
+  border-radius: 0.5rem;
+  background-color: #ecfdf5;
+  color: #065f46;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid #a7f3d0;
+}
+
+.badge-tanaman-lahan i {
+  color: var(--clr-agro-600);
+}
+

@@ -1,0 +1,15 @@
+/* ==========================================================================
+   mudatani99 - Master Stylesheet Index (css/style.css)
+   Semua UI / UX / CSS dipisahkan secara modular di dalam folder css/
+   ========================================================================== */
+
+@import url('base.css');
+@import url('login.css');
+@import url('sidebar.css');
+@import url('dashboard.css');
+@import url('user.css');
+@import url('obat-pupuk.css');
+@import url('anggota.css');
+@import url('pupuk.css');
+@import url('obat.css');
+@import url('tanaman.css');
