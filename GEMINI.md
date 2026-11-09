@@ -35,6 +35,15 @@ bahasa_indonesia:
    - Jika butuh cek kode, cek HANYA pada kode atau file yang dipertanyakan atau diperbarui sesuai perintah.
    - Tidak perlu memeriksa WSL, versi PHP, status OS, environment, atau file di luar cakupan kecuali jika diminta secara eksplisit oleh pengguna.
 
+5. **Flashmind — Gemini 3.8 Flash Smart Agent (Selalu Aktif)**:
+   - Panduan: `D:/My_Project/skills-ai/flashmind/SKILL.md` (atau `.agent/skills/flashmind/SKILL.md`)
+   - Skill Terkait:
+     - `plan-first`: Perencanaan terstruktur untuk tugas multi-langkah / multi-file.
+     - `no-invented-code`: Verifikasi kode, fungsi, pustaka, dan signature riil tanpa halusinasi.
+     - `systematic-debugging`: Investigasi bug berbasis bukti dan akar masalah riil.
+     - `verify-before-done`: Verifikasi eksekusi/pengujian riil sebelum menyatakan selesai.
+   - Prinsip: Pisahkan tegas antara fakta terverifikasi, asumsi, dan hal yang belum diketahui. Jangan pernah mengarang kode atau konfigurasi.
+
 <!-- antislop:start -->
 ## antislop (Selalu Aktif Mode: DURING)
 For UI, copy, people, mobile layout, or code comments work, read `D:/My_Project/skills-ai/antislop/SKILL.md` (core) and then the skill for the task:
@@ -44,3 +53,16 @@ Only an explicit choice of antislop during or after selects a session mode. A re
 If the mode is unresolved, ask during/after and end the response; wait for the answer before any UI review, planning, or concept. For read-only tasks, put the active-mode notice only at the start of the final answer, never in progress messages. For editing tasks, announce before the first edit and omit it from the final answer.
 To update antislop later: download `antislop.md` again, or run `npx antislop-ai --update` if it was installed as skill folders.
 <!-- antislop:end -->
+
+<!-- flashmind:start -->
+## Flashmind (Selalu Aktif)
+Terapkan prinsip kerja Flashmind pada setiap tugas coding:
+1. **Aturan Anti-Halusinasi (Strict Grounding):**
+   - Pisahkan tegas antara: **Fakta Terverifikasi** (ditemukan dari file/output nyata), **Asumsi** (labeli: "kemungkinan/belum diverifikasi"), dan **Tidak Diketahui** (katakan terus terang).
+   - Dilarang mengarang fungsi, pustaka, argumen, flag CLI, atau opsi config yang belum pernah dilihat di repositori.
+2. **Keterampilan Coding Terpadu:**
+   - Gunakan `plan-first` untuk tugas kompleks (>3 langkah atau multi-file).
+   - Gunakan `no-invented-code` saat menulis atau memodifikasi panggilan API / modul.
+   - Gunakan `systematic-debugging` untuk menganalisis dan mereproduksi bug dengan bukti sebelum mengubah kode.
+   - Gunakan `verify-before-done` sebelum menyatakan tugas selesai (lakukan pengujian/eksekusi dan laporkan bukti output).
+<!-- flashmind:end -->
