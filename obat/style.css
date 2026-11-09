@@ -1,0 +1,40 @@
+/* ==========================================================================
+   mudatani99 - Inventaris Pengelolaan Obat Stylesheet (obat/style.css)
+   ========================================================================== */
+
+/* Jumlah Kemasan Obat Badge (Pcs / Botol) */
+.badge-kemasan-obat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.28rem 0.65rem;
+  border-radius: 0.5rem;
+  background-color: #fff1f2;
+  color: #9f1239;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid #fecdd3;
+}
+
+.badge-kemasan-obat i {
+  color: #e11d48;
+}
+
+/* Input Kemasan + Pilihan Satuan (Pcs / Botol) */
+.input-kemasan-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.input-kemasan-group .modal-input {
+  flex: 1;
+}
+
+.select-satuan-obat {
+  width: 140px !important;
+  flex-shrink: 0;
+  font-weight: 600;
+  cursor: pointer;
+}
+

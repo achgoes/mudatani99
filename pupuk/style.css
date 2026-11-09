@@ -1,0 +1,704 @@
+/* ==========================================================================
+   mudatani99 - Inventaris Stok Pupuk, Hutang Piutang & Riwayat (pupuk/style.css)
+   ========================================================================== */
+
+/* Quick Submenu Tab Navigation */
+.pupuk-tab-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.pupuk-tab-btn {
+  padding: 0.58rem 1.1rem;
+  border-radius: var(--radius-lg);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: var(--transition-smooth);
+  background-color: #ffffff;
+  color: var(--clr-slate-600);
+  border: 1px solid var(--clr-slate-200);
+}
+
+.pupuk-tab-btn:hover {
+  background-color: var(--clr-slate-50);
+  color: var(--clr-agro-700);
+  border-color: var(--clr-agro-300);
+}
+
+.pupuk-tab-btn.active {
+  background: linear-gradient(135deg, var(--clr-agro-600), var(--clr-agro-700));
+  color: #ffffff;
+  border-color: var(--clr-agro-600);
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.22);
+}
+
+.pupuk-tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 0.4rem;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  background-color: var(--clr-slate-100);
+  color: var(--clr-slate-700);
+}
+
+.pupuk-tab-btn.active .pupuk-tab-badge {
+  background-color: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+}
+
+/* Additional Stat Icon Variant */
+.stat-icon-rose {
+  background: #ffe4e6;
+  color: #e11d48;
+}
+
+/* Auto-Sync Info Banner */
+.sync-info-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.85rem 1.25rem;
+  border-radius: var(--radius-xl);
+  background: linear-gradient(90deg, #f0fdf4 0%, #ecfdf5 100%);
+  border: 1px solid #bbf7d0;
+  color: #166534;
+  font-size: 0.8rem;
+}
+
+.sync-info-banner .sync-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.sync-info-banner .sync-banner-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 0.5rem;
+  background-color: #dcfce7;
+  color: #15803d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+/* Jumlah Karung Pupuk Badge */
+.badge-karung-pupuk {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.28rem 0.65rem;
+  border-radius: 0.5rem;
+  background-color: #fffbeb;
+  color: #92400e;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid #fde68a;
+}
+
+.badge-karung-pupuk i {
+  color: #d97706;
+}
+
+/* Nama Pupuk Cell Badge (For Hutang & Riwayat Table) */
+.badge-nama-pupuk {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.32rem 0.75rem;
+  border-radius: 0.5rem;
+  background-color: #eff6ff;
+  color: #1e40af;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border: 1px solid #bfdbfe;
+}
+
+.badge-nama-pupuk i {
+  color: #2563eb;
+}
+
+/* Status Hutang / Pelunasan Badges */
+.badge-status-hutang {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.8rem;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.badge-status-lunas {
+  background-color: #ecfdf5;
+  color: #065f46;
+  border-color: #a7f3d0;
+}
+
+.badge-status-lunas i {
+  color: #059669;
+}
+
+.badge-status-belum {
+  background-color: #fff1f2;
+  color: #be123c;
+  border-color: #fecdd3;
+}
+
+.badge-status-belum i {
+  color: #e11d48;
+}
+
+/* Filter Dropdown Select */
+.pupuk-filter-select {
+  padding: 0.55rem 0.9rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--clr-slate-200);
+  background-color: var(--clr-slate-50);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--clr-slate-700);
+  outline: none;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.pupuk-filter-select:focus {
+  background-color: #ffffff;
+  border-color: var(--clr-agro-500);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+}
+
+/* Quick Status Toggle Buttons */
+.btn-table-lunas {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.42rem 0.75rem;
+  border-radius: var(--radius-md);
+  background-color: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.btn-table-lunas:hover {
+  background-color: #059669;
+  color: #ffffff;
+  border-color: #059669;
+}
+
+.btn-table-batal-lunas {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.42rem 0.75rem;
+  border-radius: var(--radius-md);
+  background-color: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.btn-table-batal-lunas:hover {
+  background-color: #d97706;
+  color: #ffffff;
+  border-color: #d97706;
+}
+
+/* Tombol Aksi Bayar Hutang */
+.btn-table-bayar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.42rem 0.75rem;
+  border-radius: var(--radius-md);
+  background-color: #ecfdf5;
+  color: #047857;
+  border: 1px solid #10b981;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.btn-table-bayar:hover {
+  background-color: #059669;
+  color: #ffffff;
+  border-color: #059669;
+  box-shadow: 0 4px 10px rgba(5, 150, 105, 0.25);
+}
+
+/* Badge Harga, Jumlah Hutang, Sisa Hutang & Tanggal */
+.badge-harga-pupuk {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.65rem;
+  border-radius: var(--radius-md);
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.badge-jumlah-hutang {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.65rem;
+  border-radius: var(--radius-md);
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.badge-sisa-lunas {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.65rem;
+  border-radius: var(--radius-md);
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.badge-sisa-belum {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.65rem;
+  border-radius: var(--radius-md);
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.badge-tanggal-pupuk {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.65rem;
+  border-radius: var(--radius-md);
+  background: #f8fafc;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   RESPONSIVE ENHANCEMENTS FOR PUPUK & HUTANG PIUTANG
+   ========================================================================== */
+@media (max-width: 640px) {
+  .pupuk-tab-nav {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .pupuk-tab-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .pupuk-tab-btn {
+    flex-shrink: 0;
+    white-space: nowrap;
+    padding: 0.5rem 0.85rem;
+  }
+
+  .sync-info-banner {
+    padding: 0.75rem 0.85rem;
+    font-size: 0.75rem;
+  }
+
+  .pupuk-filter-select {
+    width: 100%;
+  }
+}
+
+/* ==========================================================================
+   MODAL HUTANG DIALOG & FORM ENHANCEMENTS
+   ========================================================================== */
+.modal-hutang-dialog {
+  max-width: 580px !important;
+  max-height: 90vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.modal-hutang-dialog .custom-modal-body {
+  overflow-y: auto !important;
+  max-height: calc(90vh - 135px) !important;
+  padding: 1.25rem 1.5rem !important;
+  scrollbar-width: thin;
+  scrollbar-color: var(--clr-slate-300) transparent;
+}
+
+.modal-hutang-dialog .custom-modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-hutang-dialog .custom-modal-body::-webkit-scrollbar-thumb {
+  background-color: var(--clr-slate-300);
+  border-radius: 9999px;
+}
+
+.modal-form-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+@media (max-width: 600px) {
+  .modal-form-grid-2 {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}
+
+.modal-input.input-error {
+  border-color: #f43f5e !important;
+  background-color: #fff1f2 !important;
+  box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.22) !important;
+}
+
+/* ==========================================================================
+   TOMBOL INFO, BADGE RIWAYAT PEMBAYARAN & MODAL DETAIL INFO HUTANG
+   ========================================================================== */
+.stat-info .stat-value.stat-value-rupiah {
+  font-size: 1.3rem;
+}
+
+.btn-table-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.42rem 0.75rem;
+  border-radius: var(--radius-md);
+  background-color: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.btn-table-info:hover {
+  background-color: #2563eb;
+  color: #ffffff;
+  border-color: #2563eb;
+  transform: translateY(-1px);
+}
+
+.badge-jumlah-bayar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.65rem;
+  border-radius: var(--radius-md);
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #6ee7b7;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.badge-metode-bayar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.26rem 0.65rem;
+  border-radius: var(--radius-md);
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  font-size: 0.76rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.bayar-ke-label {
+  display: block;
+  margin-top: 0.22rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #0f766e;
+}
+
+.link-riwayat-ke-hutang {
+  color: #15803d;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.modal-info-hutang-dialog {
+  max-width: 780px !important;
+  max-height: 90vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.modal-info-hutang-dialog .custom-modal-body {
+  overflow-y: auto !important;
+  max-height: calc(90vh - 135px) !important;
+  padding: 1.25rem 1.5rem !important;
+}
+
+.info-hutang-top-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.9rem 1.1rem;
+  border-radius: var(--radius-xl);
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 1rem;
+}
+
+.info-hutang-petani-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.info-hutang-petani-meta h5 {
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.info-hutang-petani-meta p {
+  font-size: 0.76rem;
+  color: #475569;
+  margin: 0.15rem 0 0;
+}
+
+.info-hutang-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+}
+
+.info-detail-item {
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--radius-lg);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+}
+
+.info-detail-label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 0.2rem;
+}
+
+.info-detail-val {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.info-hutang-summary-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.15rem;
+}
+
+.info-summary-box {
+  padding: 0.8rem 0.95rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid transparent;
+}
+
+.info-summary-title {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.info-summary-amount {
+  display: block;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.info-summary-box small {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  margin-top: 0.15rem;
+}
+
+.info-summary-total {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1e3a8a;
+}
+
+.info-summary-paid {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #065f46;
+}
+
+.info-summary-remaining {
+  background: #fff1f2;
+  border-color: #fecdd3;
+  color: #9f1239;
+}
+
+.info-riwayat-section {
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
+.info-riwayat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.info-riwayat-header h6 {
+  font-size: 0.84rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.info-riwayat-count {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.info-riwayat-table-wrap {
+  overflow-x: auto;
+}
+
+.info-riwayat-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+
+.info-riwayat-table th {
+  background: #f1f5f9;
+  color: #334155;
+  font-weight: 700;
+  text-align: left;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.info-riwayat-table td {
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
+  vertical-align: middle;
+}
+
+.info-riwayat-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.info-riwayat-row-highlight {
+  background-color: #fef9c3 !important;
+}
+
+.badge-tahap-bayar {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 0.4rem;
+  background: #e0f2fe;
+  color: #0369a1;
+  font-weight: 800;
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.info-ket-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.info-dicatat-oleh {
+  font-size: 0.68rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.info-riwayat-empty {
+  text-align: center;
+  padding: 1.5rem 1rem !important;
+  color: #64748b !important;
+  font-weight: 600;
+}
+
+@media (max-width: 680px) {
+  .info-hutang-detail-grid,
+  .info-hutang-summary-cards {
+    grid-template-columns: 1fr;
+  }
+}

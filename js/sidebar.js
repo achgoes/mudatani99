@@ -3,7 +3,7 @@
  * Manages:
  * 1. Sidebar slider open/close (desktop collapse & mobile slide-in drawer)
  * 2. Dropdown submenu accordion with smooth chevron rotation
- * 3. Auto-expanding current active submenu based on URL
+ * (Menu aktif & dropdown terbuka ditentukan server di layouts/sidebar.php)
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -92,55 +92,6 @@ document.addEventListener('DOMContentLoaded', () => {
         toggle.setAttribute('aria-expanded', 'true');
       }
     });
-  });
-
-  /* ============================================================
-     3. AUTO-EXPAND ACTIVE MENU BASED ON CURRENT FILE
-  ============================================================ */
-  const currentFile = window.location.pathname.split('/').pop() || 'dashboard.php';
-  const currentFull = currentFile + window.location.search;
-
-  let matchedExact = false;
-  document.querySelectorAll('.submenu-link').forEach(link => {
-    const href = link.getAttribute('href');
-    if (href && href === currentFull) {
-      matchedExact = true;
-      link.classList.add('active');
-      const parentDropdown = link.closest('.nav-dropdown-item');
-      if (parentDropdown) {
-        parentDropdown.classList.add('open');
-        const t = parentDropdown.querySelector('.nav-dropdown-toggle');
-        if (t) {
-          t.classList.add('active');
-          t.setAttribute('aria-expanded', 'true');
-        }
-      }
-    }
-  });
-
-  if (!matchedExact) {
-    document.querySelectorAll('.submenu-link').forEach(link => {
-      const href = link.getAttribute('href');
-      if (href && href === currentFile) {
-        link.classList.add('active');
-        const parentDropdown = link.closest('.nav-dropdown-item');
-        if (parentDropdown) {
-          parentDropdown.classList.add('open');
-          const t = parentDropdown.querySelector('.nav-dropdown-toggle');
-          if (t) {
-            t.classList.add('active');
-            t.setAttribute('aria-expanded', 'true');
-          }
-        }
-      }
-    });
-  }
-
-  document.querySelectorAll('.nav-item-link').forEach(link => {
-    const href = link.getAttribute('href');
-    if (href && href === currentFile) {
-      link.classList.add('active');
-    }
   });
 
   /* ============================================================

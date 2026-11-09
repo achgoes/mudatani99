@@ -1,0 +1,42 @@
+/* ==========================================================================
+   mudatani99 - Inventaris Pengelolaan Tanaman Stylesheet (tanaman/style.css)
+   ========================================================================== */
+
+/* Jumlah Kemasan Tanaman Badge (Pcs) */
+.badge-kemasan-tanaman {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.28rem 0.65rem;
+  border-radius: 0.5rem;
+  background-color: #ecfdf5;
+  color: #065f46;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid #a7f3d0;
+}
+
+.badge-kemasan-tanaman i {
+  color: var(--clr-agro-600);
+}
+
+/* Input Kemasan + Pilihan Satuan (Pcs) */
+.input-kemasan-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.input-kemasan-group .modal-input {
+  flex: 1;
+}
+
+.select-satuan-tanaman {
+  width: 110px !important;
+  flex-shrink: 0;
+  background-color: var(--clr-slate-100) !important;
+  font-weight: 700;
+  color: var(--clr-slate-700);
+  cursor: pointer;
+}
+

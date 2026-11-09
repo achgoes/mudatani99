@@ -66,7 +66,7 @@ $tanggalServer = "$hariIni, $tglIni $blnIni $thnIni";
         </div>
 
         <!-- Tombol Akses AI -->
-        <a href="ai.php" class="btn-quick-action btn-quick-action-amber hidden md:inline-flex" title="Konsultasi Penyuluh AI">
+        <a href="<?= appUrl('ai/') ?>" class="btn-quick-action btn-quick-action-amber hidden md:inline-flex" title="Konsultasi Penyuluh AI">
             <i class="fa-solid fa-wand-magic-sparkles"></i>
             <span>Penyuluh AI</span>
         </a>
@@ -115,7 +115,7 @@ $tanggalServer = "$hariIni, $tglIni $blnIni $thnIni";
                 <div class="dropdown-menu-divider"></div>
 
                 <div class="dropdown-menu-items">
-                    <a href="pengaturan.php?view=akun" class="dropdown-item-link" role="menuitem">
+                    <a href="<?= appUrl('pengaturan/?view=akun') ?>" class="dropdown-item-link" role="menuitem">
                         <div class="dropdown-item-icon icon-emerald">
                             <i class="fa-solid fa-user-gear"></i>
                         </div>
@@ -124,7 +124,7 @@ $tanggalServer = "$hariIni, $tglIni $blnIni $thnIni";
                             <span class="text-xs text-slate-400">Ubah sandi &amp; data diri</span>
                         </div>
                     </a>
-                    <a href="pengaturan.php" class="dropdown-item-link" role="menuitem">
+                    <a href="<?= appUrl('pengaturan/') ?>" class="dropdown-item-link" role="menuitem">
                         <div class="dropdown-item-icon icon-amber">
                             <i class="fa-solid fa-building-wheat"></i>
                         </div>
@@ -138,7 +138,7 @@ $tanggalServer = "$hariIni, $tglIni $blnIni $thnIni";
                 <div class="dropdown-menu-divider"></div>
 
                 <div class="dropdown-menu-footer">
-                    <a href="logout.php" class="dropdown-logout-btn" role="menuitem" title="Keluar dari akun">
+                    <a href="<?= appUrl('logout.php') ?>" class="dropdown-logout-btn" role="menuitem" title="Keluar dari akun">
                         <i class="fa-solid fa-arrow-right-from-bracket"></i>
                         <span>Keluar Sesi</span>
                     </a>

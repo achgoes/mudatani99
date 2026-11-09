@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once __DIR__ . '/config/app.php';
 
 // Unset semua variabel sesi
 $_SESSION = [];
@@ -22,5 +22,5 @@ if (ini_get("session.use_cookies")) {
 session_destroy();
 
 // Redirect ke halaman login
-header("Location: index.php");
+header('Location: ' . appUrl('index.php'));
 exit;

@@ -1,7 +1,5 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . '/../config/app.php';
 
 // Default title if not provided
 if (!isset($pageTitle)) {
@@ -26,12 +24,13 @@ if (!isset($pageTitle)) {
     <script src="https://cdn.tailwindcss.com"></script>
 
     <!-- Base & Modular CSS Files -->
-    <link rel="stylesheet" href="css/base.css">
-    <link rel="stylesheet" href="css/sidebar.css">
-    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="<?= appUrl('css/base.css') ?>">
+    <link rel="stylesheet" href="<?= appUrl('css/sidebar.css') ?>">
+    <link rel="stylesheet" href="<?= appUrl('css/dashboard.css') ?>">
+    <?php // $extraCss: daftar path CSS relatif proyek, mis. ['css/data-page.css', 'pupuk/style.css'] ?>
     <?php if (isset($extraCss) && is_array($extraCss)): ?>
         <?php foreach ($extraCss as $cssFile): ?>
-            <link rel="stylesheet" href="<?= htmlspecialchars($cssFile) ?>">
+            <link rel="stylesheet" href="<?= htmlspecialchars(appUrl($cssFile)) ?>">
         <?php endforeach; ?>
     <?php endif; ?>
 
