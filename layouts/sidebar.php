@@ -33,12 +33,6 @@ $sidebarMenu = [
             ['label' => 'Laporan Keuangan Kas', 'route' => 'transaksi', 'view' => 'laporan'],
         ]],
     ]],
-    ['title' => 'Kecerdasan Buatan', 'items' => [
-        ['type' => 'group', 'label' => 'Penyuluh AI Pintar', 'icon' => 'fa-robot text-amber-300', 'submenu' => [
-            ['label' => 'Konsultasi Tanya Jawab AI', 'route' => 'ai', 'view' => null],
-            ['label' => 'Rekomendasi Dosis Pupuk', 'route' => 'ai', 'view' => 'analisis'],
-        ]],
-    ]],
     ['title' => 'Konfigurasi', 'items' => [
         ['type' => 'group', 'label' => 'Pengaturan', 'icon' => 'fa-gear', 'submenu' => [
             ['label' => 'Profil Kelompok Tani', 'route' => 'pengaturan', 'view' => null],

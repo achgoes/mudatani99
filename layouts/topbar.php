@@ -65,12 +65,6 @@ $tanggalServer = "$hariIni, $tglIni $blnIni $thnIni";
             <span><?= htmlspecialchars($tanggalServer) ?></span>
         </div>
 
-        <!-- Tombol Akses AI -->
-        <a href="<?= appUrl('ai/') ?>" class="btn-quick-action btn-quick-action-amber hidden md:inline-flex" title="Konsultasi Penyuluh AI">
-            <i class="fa-solid fa-wand-magic-sparkles"></i>
-            <span>Penyuluh AI</span>
-        </a>
-
         <!-- Profil Akun Dropdown (Pojok Kanan Atas) -->
         <div class="topbar-user-dropdown-wrapper" id="topbarUserDropdownWrapper">
             <button
