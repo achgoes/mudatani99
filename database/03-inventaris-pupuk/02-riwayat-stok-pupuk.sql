@@ -1,13 +1,13 @@
 -- =====================================================================
--- mudatani99 - Query Riwayat Pengelolaan Stok Pupuk (query4.sql)
--- Target Database: mudatani99
--- Catatan:
---   - File ini berisi query lanjutan setelah query.sql, query2.sql, dan query3.sql.
---   - Membuat tabel riwayat_stok_pupuk untuk mencatat seluruh riwayat pengelolaan stok
---     (tambah baru, akumulasi stok, edit stok, hapus stok, penjualan, dan hutang pupuk).
+-- mudatani99 - Inventaris Pupuk -> Riwayat Stok Pupuk
+-- File      : database/03-inventaris-pupuk/02-riwayat-stok-pupuk.sql
+-- Tabel     : riwayat_stok_pupuk
+-- Prasyarat : 03-inventaris-pupuk/01-stok-pupuk.sql
+-- Catatan   : Mencatat seluruh aktivitas pengelolaan stok pupuk (tambah baru,
+--             akumulasi, edit, hapus, penjualan, dan hutang piutang pupuk).
 -- =====================================================================
 
--- 1. Tabel riwayat_stok_pupuk
+-- 1. Buat Tabel riwayat_stok_pupuk
 CREATE TABLE IF NOT EXISTS `riwayat_stok_pupuk` (
     `id` INT(11) NOT NULL AUTO_INCREMENT,
     `pengelolaan_pupuk_id` INT(11) DEFAULT NULL,
@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS `riwayat_stok_pupuk` (
     CONSTRAINT `fk_rsp_master` FOREIGN KEY (`pupuk_id`) REFERENCES `master_produk` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 2. Backfill stok awal untuk data pengelolaan_pupuk yang sudah ada (jika riwayat masih kosong)
+-- 2. Backfill Stok Awal untuk Data pengelolaan_pupuk yang Sudah Ada (Jika Riwayat Kosong)
 INSERT INTO `riwayat_stok_pupuk` (
     `pengelolaan_pupuk_id`, `pupuk_id`, `nama_pupuk`, `sumber`, `aksi`,
     `karung_sebelum`, `berat_sebelum`, `perubahan_karung`, `perubahan_berat`,

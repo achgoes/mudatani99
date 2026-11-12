@@ -1,11 +1,11 @@
 -- =====================================================================
--- mudatani99 - Query Submenu 5: Hutang Piutang Obat (05-hutang-piutang-obat.sql)
--- Target Database: mudatani99
--- Menu: Inventaris Obat -> Hutang Piutang (hutang_obat, hutang_obat_items)
--- Prasyarat: Jalankan 01-stok-obat.sql dan 03-penjualan-obat.sql (anggota_petani) terlebih dahulu.
--- Catatan:
---   - Mencatat transaksi hutang piutang obat anggota petani (single / multi-item).
---   - Tersinkronisasi otomatis dengan stok pada pengelolaan_obat.
+-- mudatani99 - Inventaris Obat -> Hutang Piutang
+-- File      : database/04-inventaris-obat/05-hutang-piutang-obat.sql
+-- Tabel     : hutang_obat, hutang_obat_items
+-- Prasyarat : 02-data-anggota/01-daftar-anggota-petani.sql,
+--             04-inventaris-obat/01-stok-obat.sql
+-- Catatan   : Mencatat transaksi hutang piutang obat anggota petani
+--             (single / multi-item) yang tersinkronisasi dengan Stok Obat.
 -- =====================================================================
 
 -- 1. Buat Tabel hutang_obat

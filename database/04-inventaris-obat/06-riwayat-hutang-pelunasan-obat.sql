@@ -1,9 +1,9 @@
 -- =====================================================================
--- mudatani99 - Query Submenu 6: Riwayat Hutang / Pelunasan Obat (06-riwayat-hutang-pelunasan-obat.sql)
--- Target Database: mudatani99
--- Menu: Inventaris Obat -> Riwayat Hutang / Pelunasan (riwayat_hutang_obat, pembayaran_hutang_obat)
--- Prasyarat: Jalankan 05-hutang-piutang-obat.sql terlebih dahulu.
--- Catatan:
+-- mudatani99 - Inventaris Obat -> Riwayat Hutang / Pelunasan
+-- File      : database/04-inventaris-obat/06-riwayat-hutang-pelunasan-obat.sql
+-- Tabel     : riwayat_hutang_obat, pembayaran_hutang_obat
+-- Prasyarat : 04-inventaris-obat/05-hutang-piutang-obat.sql
+-- Catatan   :
 --   - riwayat_hutang_obat: ringkasan sinkron 1 baris per hutang_obat.
 --   - pembayaran_hutang_obat: jejak setiap pembayaran/cicilan (1 baris = 1 kali bayar).
 -- =====================================================================
@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS `riwayat_hutang_obat` (
     CONSTRAINT `fk_riwayat_hutang_obat_parent` FOREIGN KEY (`hutang_id`) REFERENCES `hutang_obat` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 2. Buat Tabel pembayaran_hutang_obat
+-- 2. Buat Tabel pembayaran_hutang_obat (1 Baris = 1 Transaksi Pembayaran / Cicilan)
 CREATE TABLE IF NOT EXISTS `pembayaran_hutang_obat` (
     `id` INT(11) NOT NULL AUTO_INCREMENT,
     `hutang_id` INT(11) NOT NULL,
@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS `pembayaran_hutang_obat` (
     CONSTRAINT `fk_bayar_hutang_obat_parent` FOREIGN KEY (`hutang_id`) REFERENCES `hutang_obat` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 3. Sinkronkan Data riwayat_hutang_obat dari hutang_obat (Jika Sudah Ada Data Hutang Obat)
+-- 3. Sinkronkan riwayat_hutang_obat dari hutang_obat
 INSERT INTO `riwayat_hutang_obat` (
     `hutang_id`, `anggota_id`, `nama_petani`, `pengelolaan_obat_id`,
     `obat_id`, `nama_obat`, `jumlah_kemasan`, `jumlah_berat`,

@@ -1,24 +1,14 @@
 -- =====================================================================
--- mudatani99 - Query Submenu 3: Penjualan Obat (03-penjualan-obat.sql)
--- Target Database: mudatani99
--- Menu: Inventaris Obat -> Penjualan (penjualan_obat, penjualan_obat_items)
--- Prasyarat: Jalankan 01-stok-obat.sql dan 02-riwayat-stok-obat.sql terlebih dahulu.
--- Catatan:
---   - Transaksi penjualan langsung obat (Tunai / Transfer / QRIS), berdiri sendiri
---     terpisah dari hutang piutang, dan otomatis mengurangi Stok Obat.
+-- mudatani99 - Inventaris Obat -> Penjualan
+-- File      : database/04-inventaris-obat/03-penjualan-obat.sql
+-- Tabel     : penjualan_obat, penjualan_obat_items
+-- Prasyarat : 02-data-anggota/01-daftar-anggota-petani.sql,
+--             04-inventaris-obat/01-stok-obat.sql
+-- Catatan   : Transaksi penjualan langsung obat (Tunai / Transfer / QRIS),
+--             berdiri sendiri dan otomatis mengurangi Stok Obat.
 -- =====================================================================
 
--- 1. Pastikan Tabel anggota_petani Tersedia (untuk Pembeli Anggota Poktan)
-CREATE TABLE IF NOT EXISTS `anggota_petani` (
-    `id` INT(11) NOT NULL AUTO_INCREMENT,
-    `nama_petani` VARCHAR(100) NOT NULL,
-    `alamat` VARCHAR(255) NOT NULL,
-    `keterangan` VARCHAR(255) DEFAULT '-',
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- 2. Buat Tabel penjualan_obat
+-- 1. Buat Tabel penjualan_obat
 CREATE TABLE IF NOT EXISTS `penjualan_obat` (
     `id` INT(11) NOT NULL AUTO_INCREMENT,
     `kode_transaksi` VARCHAR(30) NOT NULL,
@@ -42,7 +32,7 @@ CREATE TABLE IF NOT EXISTS `penjualan_obat` (
     CONSTRAINT `fk_penjualan_obat_anggota` FOREIGN KEY (`anggota_id`) REFERENCES `anggota_petani` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 3. Buat Tabel penjualan_obat_items (Mendukung Multi-Item Obat per Nota)
+-- 2. Buat Tabel penjualan_obat_items (Detail Multi-Item Obat per Nota)
 CREATE TABLE IF NOT EXISTS `penjualan_obat_items` (
     `id` INT(11) NOT NULL AUTO_INCREMENT,
     `penjualan_id` INT(11) NOT NULL,

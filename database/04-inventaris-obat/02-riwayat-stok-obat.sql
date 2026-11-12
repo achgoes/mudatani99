@@ -1,11 +1,10 @@
 -- =====================================================================
--- mudatani99 - Query Submenu 2: Riwayat Stok Obat (02-riwayat-stok-obat.sql)
--- Target Database: mudatani99
--- Menu: Inventaris Obat -> Riwayat Stok Obat (riwayat_stok_obat)
--- Prasyarat: Jalankan 01-stok-obat.sql terlebih dahulu.
--- Catatan:
---   - Mencatat seluruh perubahan stok obat: tambah baru, tambah akumulasi,
---     edit stok, hapus stok, penjualan, dan hutang piutang obat.
+-- mudatani99 - Inventaris Obat -> Riwayat Stok Obat
+-- File      : database/04-inventaris-obat/02-riwayat-stok-obat.sql
+-- Tabel     : riwayat_stok_obat
+-- Prasyarat : 04-inventaris-obat/01-stok-obat.sql
+-- Catatan   : Mencatat seluruh aktivitas pengelolaan stok obat (tambah baru,
+--             akumulasi, edit, hapus, penjualan, dan hutang piutang obat).
 -- =====================================================================
 
 -- 1. Buat Tabel riwayat_stok_obat
@@ -34,7 +33,7 @@ CREATE TABLE IF NOT EXISTS `riwayat_stok_obat` (
     CONSTRAINT `fk_rso_master` FOREIGN KEY (`obat_id`) REFERENCES `master_produk` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 2. Backfill Stok Awal untuk Data pengelolaan_obat yang Sudah Ada (Jika Riwayat Masih Kosong)
+-- 2. Backfill Stok Awal untuk Data pengelolaan_obat yang Sudah Ada (Jika Riwayat Kosong)
 INSERT INTO `riwayat_stok_obat` (
     `pengelolaan_obat_id`, `obat_id`, `nama_obat`, `sumber`, `aksi`,
     `kemasan_sebelum`, `berat_sebelum`, `perubahan_kemasan`, `perubahan_berat`,
