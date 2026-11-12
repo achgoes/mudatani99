@@ -1,35 +1,55 @@
 <!-- ========================================================
-     MODAL 1: TAMBAH PENGELOLAAN TANAMAN
+     MODAL 1: TAMBAH STOK TANAMAN
 ======================================================== -->
 <div id="modalTambahTanaman" class="custom-modal-backdrop" role="dialog" aria-modal="true">
     <div class="custom-modal-dialog">
         <div class="custom-modal-header">
             <h4>
                 <i class="fa-solid fa-wheat-awn text-agro-600"></i>
-                Tambah Data Pengelolaan Tanaman
+                Tambah Stok Tanaman
             </h4>
             <button type="button" class="btn-modal-close" onclick="closeModal('modalTambahTanaman')">
                 <i class="fa-solid fa-xmark"></i>
             </button>
         </div>
 
-        <form action="<?= appUrl('tanaman/') ?>" method="POST">
+        <form action="<?= appUrl('tanaman/') ?>" method="POST" id="formTambahStokTanaman">
             <input type="hidden" name="action" value="add">
 
             <div class="custom-modal-body">
+                <!-- Info Status Stok (Baru vs Akumulasi) -->
+                <div id="add-stock-status-alert" class="hidden mb-3 p-3 rounded-xl border text-xs flex items-start gap-2.5"></div>
+
                 <div class="modal-form-group">
                     <label class="modal-label" for="add-tanaman-id">Nama Tanaman (Dari Master - Tanaman) <span class="text-rose-500">*</span></label>
-                    <select id="add-tanaman-id" name="tanaman_id" required class="modal-input">
+                    <select id="add-tanaman-id" name="tanaman_id" required class="modal-input" onchange="onSelectTanamanTambahStok()">
                         <option value="">-- Pilih Nama Tanaman --</option>
-                        <?php foreach ($masterTanamanList as $mt): ?>
-                            <option value="<?= (int)$mt['id'] ?>"><?= htmlspecialchars($mt['nama_produk']) ?></option>
+                        <?php foreach ($masterTanamanList as $mt):
+                            $mId = (int)$mt['id'];
+                            $mNameLower = mb_strtolower(trim($mt['nama_produk']));
+                            $existStock = $stokMapByTanamanId[$mId] ?? ($stokMapByNameLower[$mNameLower] ?? null);
+                            $hasStock   = ($existStock !== null);
+                            $curKemasan = $hasStock ? $existStock['kemasan_num'] : 0;
+                            $curBerat   = $hasStock ? $existStock['jumlah_berat'] : '0 Kg';
+                            $bpk        = $hasStock ? $existStock['berat_per_kemasan'] : 10;
+                        ?>
+                            <option
+                                value="<?= $mId ?>"
+                                data-has-stock="<?= $hasStock ? '1' : '0' ?>"
+                                data-cur-kemasan="<?= $curKemasan ?>"
+                                data-cur-berat="<?= htmlspecialchars($curBerat) ?>"
+                                data-bpk="<?= $bpk ?>"
+                                data-nama="<?= htmlspecialchars($mt['nama_produk']) ?>"
+                            >
+                                <?= htmlspecialchars($mt['nama_produk']) ?><?= $hasStock ? " (Sudah Ada: {$curKemasan} Pcs)" : " (Produk Baru)" ?>
+                            </option>
                         <?php endforeach; ?>
                     </select>
-                    <p class="modal-helper-text">Diambil dari menu Master Obat, Pupuk, dan Tanaman (khusus jenis Tanaman).</p>
+                    <p class="modal-helper-text">Pilih tanaman dari Master. Jika sudah ada stok, penambahan akan otomatis <b>menjumlahkan stok yang ada</b> (tidak menambah baris baru).</p>
                 </div>
 
                 <div class="modal-form-group">
-                    <label class="modal-label" for="add-jumlah-angka">Jumlah Kemasan <span class="text-rose-500">*</span></label>
+                    <label class="modal-label" for="add-jumlah-angka">Jumlah Kemasan Ditambahkan <span class="text-rose-500">*</span></label>
                     <div class="input-kemasan-group">
                         <input
                             type="number"
@@ -40,6 +60,7 @@
                             required
                             class="modal-input"
                             placeholder="Contoh: 20"
+                            oninput="autoCalcBeratTambahStok()"
                         >
                         <select name="satuan_kemasan" class="modal-input select-satuan-tanaman">
                             <option value="Pcs">Pcs</option>
@@ -49,7 +70,7 @@
                 </div>
 
                 <div class="modal-form-group">
-                    <label class="modal-label" for="add-jumlah-berat">Jumlah Berat <span class="text-rose-500">*</span></label>
+                    <label class="modal-label" for="add-jumlah-berat">Jumlah Berat Ditambahkan <span class="text-rose-500">*</span></label>
                     <input
                         type="text"
                         id="add-jumlah-berat"
@@ -74,9 +95,9 @@
 
             <div class="custom-modal-footer">
                 <button type="button" class="btn-modal-cancel" onclick="closeModal('modalTambahTanaman')">Batal</button>
-                <button type="submit" class="btn-modal-save">
+                <button type="submit" class="btn-modal-save" id="btn-save-tambah-tanaman">
                     <i class="fa-solid fa-floppy-disk mr-1"></i>
-                    Simpan Data Tanaman
+                    <span id="btn-save-tambah-tanaman-text">Simpan Stok Tanaman</span>
                 </button>
             </div>
         </form>
@@ -84,14 +105,14 @@
 </div>
 
 <!-- ========================================================
-     MODAL 2: EDIT PENGELOLAAN TANAMAN
+     MODAL 2: EDIT STOK TANAMAN
 ======================================================== -->
 <div id="modalEditTanaman" class="custom-modal-backdrop" role="dialog" aria-modal="true">
     <div class="custom-modal-dialog">
         <div class="custom-modal-header">
             <h4>
                 <i class="fa-solid fa-pen-to-square text-agro-600"></i>
-                Edit Data Pengelolaan Tanaman
+                Edit Data Stok Tanaman
             </h4>
             <button type="button" class="btn-modal-close" onclick="closeModal('modalEditTanaman')">
                 <i class="fa-solid fa-xmark"></i>
@@ -166,14 +187,14 @@
 </div>
 
 <!-- ========================================================
-     MODAL 3: KONFIRMASI HAPUS PENGELOLAAN TANAMAN
+     MODAL 3: KONFIRMASI HAPUS STOK TANAMAN
 ======================================================== -->
 <div id="modalDeleteTanaman" class="custom-modal-backdrop" role="dialog" aria-modal="true">
     <div class="custom-modal-dialog max-w-sm">
         <div class="custom-modal-header bg-rose-50/50">
             <h4 class="text-rose-700">
                 <i class="fa-solid fa-triangle-exclamation text-rose-600"></i>
-                Hapus Data Tanaman
+                Hapus Data Stok Tanaman
             </h4>
             <button type="button" class="btn-modal-close" onclick="closeModal('modalDeleteTanaman')">
                 <i class="fa-solid fa-xmark"></i>
@@ -191,7 +212,7 @@
                 <h5 class="font-bold text-slate-800 text-base mb-1" id="delete-name-display">-</h5>
                 <p class="text-xs text-slate-500 mb-2">Jumlah Kemasan: <span id="delete-kemasan-display" class="font-bold text-slate-700">-</span></p>
                 <p class="text-xs text-rose-600 bg-rose-50 p-2 rounded-lg border border-rose-200">
-                    Apakah Anda yakin ingin menghapus data pengelolaan tanaman ini?
+                    Apakah Anda yakin ingin menghapus data stok tanaman ini?
                 </p>
             </div>
 
@@ -205,4 +226,3 @@
         </form>
     </div>
 </div>
-

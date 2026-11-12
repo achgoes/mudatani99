@@ -33,7 +33,12 @@ $sidebarMenu = [
             ['label' => 'Riwayat Hutang / Pelunasan', 'route' => 'obat', 'view' => 'riwayat'],
         ]],
         ['type' => 'group', 'label' => 'Inventaris Tanaman', 'icon' => 'fa-wheat-awn', 'submenu' => [
-            ['label' => 'Pengelolaan Tanaman', 'route' => 'tanaman', 'view' => null],
+            ['label' => 'Stok Tanaman', 'route' => 'tanaman', 'view' => null],
+            ['label' => 'Riwayat Stok Tanaman', 'route' => 'tanaman', 'view' => 'riwayat_stok'],
+            ['label' => 'Penjualan', 'route' => 'tanaman', 'view' => 'penjualan'],
+            ['label' => 'Riwayat Penjualan', 'route' => 'tanaman', 'view' => 'riwayat_penjualan'],
+            ['label' => 'Hutang Piutang', 'route' => 'tanaman', 'view' => 'hutang'],
+            ['label' => 'Riwayat Hutang / Pelunasan', 'route' => 'tanaman', 'view' => 'riwayat'],
         ]],
     ]],
 ];

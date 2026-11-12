@@ -1,11 +1,12 @@
 -- =====================================================================
--- mudatani99 - Inventaris Tanaman -> Pengelolaan Tanaman
--- File      : database/05-inventaris-tanaman/01-pengelolaan-tanaman.sql
+-- mudatani99 - Inventaris Tanaman -> Stok Tanaman
+-- File      : database/05-inventaris-tanaman/01-stok-tanaman.sql
 -- Tabel     : pengelolaan_tanaman
 -- Prasyarat : 01-master/02-obat-pupuk-tanaman.sql
+-- Catatan   : Menggunakan kolom jumlah_kemasan (satuan: Pcs).
 -- =====================================================================
 
--- 1. Buat Tabel pengelolaan_tanaman (Satuan Kemasan: Pcs)
+-- 1. Buat Tabel pengelolaan_tanaman (Stok Tanaman)
 CREATE TABLE IF NOT EXISTS `pengelolaan_tanaman` (
     `id` INT(11) NOT NULL AUTO_INCREMENT,
     `tanaman_id` INT(11) DEFAULT NULL,
@@ -36,7 +37,7 @@ PREPARE stmt_rename_karung_tanaman FROM @sql_rename_karung_tanaman;
 EXECUTE stmt_rename_karung_tanaman;
 DEALLOCATE PREPARE stmt_rename_karung_tanaman;
 
--- 3. Data Awal Pengelolaan Tanaman (Diambil dari master_produk jenis = 'Tanaman', Satuan Pcs)
+-- 3. Data Awal Stok Tanaman (Diambil dari master_produk jenis = 'Tanaman', Satuan Pcs)
 INSERT INTO `pengelolaan_tanaman` (`id`, `tanaman_id`, `nama_tanaman`, `jumlah_kemasan`, `jumlah_berat`, `keterangan`) VALUES
 (1, 6,  'Padi Sawah',     '30 Pcs', '750 Kg', 'Stok Benih Padi Unggul Siap Tanam'),
 (2, 7,  'Jagung Hibrida', '18 Pcs', '450 Kg', 'Stok Benih Jagung Hibrida Gudang Poktan'),
