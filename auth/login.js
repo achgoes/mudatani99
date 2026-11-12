@@ -8,6 +8,11 @@
  */
 
 document.addEventListener('DOMContentLoaded', () => {
+  try {
+    localStorage.removeItem('mudatani_last_activity');
+  } catch (e) {
+    // Abaikan jika penyimpanan lokal dibatasi browser
+  }
 
   /* ============================================================
      1. 3D CARD TILT PARALLAX EFFECT

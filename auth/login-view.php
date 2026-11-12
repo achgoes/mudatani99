@@ -150,6 +150,14 @@
                     <p>Silakan masuk menggunakan akun <strong>Username</strong> atau <strong>NIK</strong> kelompok tani Anda.</p>
                 </div>
 
+                <!-- Alert Session Timeout -->
+                <?php if (!empty($timeoutNotice) && empty($errorMessage)): ?>
+                <div class="mb-5 p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-semibold flex items-center gap-2.5 fade-in" role="alert">
+                    <i class="fa-solid fa-clock-rotate-left text-amber-500 text-base shrink-0"></i>
+                    <span><?= htmlspecialchars($timeoutNotice) ?></span>
+                </div>
+                <?php endif; ?>
+
                 <!-- Alert Error Message -->
                 <?php if (!empty($errorMessage)): ?>
                 <div class="mb-5 p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2.5 fade-in">
