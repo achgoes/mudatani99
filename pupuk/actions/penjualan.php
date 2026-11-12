@@ -105,7 +105,11 @@ if ($action === 'add_penjualan') {
                 $insStmt->close();
 
                 savePenjualanItems($conn, $newPenjualanId, $items);
-                adjustHutangItemsStock($conn, $items, -1);
+                adjustHutangItemsStock($conn, $items, -1, [
+                    'sumber'     => 'Penjualan',
+                    'aksi'       => 'Penjualan',
+                    'keterangan' => "Nota {$kodeTransaksi} ({$namaPembeli})",
+                ]);
                 recordRiwayatPenjualan(
                     $conn,
                     $newPenjualanId,
@@ -190,8 +194,16 @@ if ($action === 'add_penjualan') {
                 $conn->begin_transaction();
 
                 // 1. Kembalikan stok item lama, lalu kurangi stok item baru
-                adjustHutangItemsStock($conn, $oldItems, +1);
-                adjustHutangItemsStock($conn, $newItems, -1);
+                adjustHutangItemsStock($conn, $oldItems, +1, [
+                    'sumber'     => 'Penjualan',
+                    'aksi'       => 'Revisi Penjualan (Kembali)',
+                    'keterangan' => "Edit Nota {$oldRow['kode_transaksi']} ({$namaPembeli})",
+                ]);
+                adjustHutangItemsStock($conn, $newItems, -1, [
+                    'sumber'     => 'Penjualan',
+                    'aksi'       => 'Revisi Penjualan (Keluar)',
+                    'keterangan' => "Edit Nota {$oldRow['kode_transaksi']} ({$namaPembeli})",
+                ]);
 
                 $updStmt = $conn->prepare("
                     UPDATE penjualan_pupuk
@@ -286,7 +298,11 @@ if ($action === 'add_penjualan') {
                 $delStmt->bind_param("i", $id);
                 if ($delStmt->execute()) {
                     $delStmt->close();
-                    adjustHutangItemsStock($conn, $oldItems, +1);
+                    adjustHutangItemsStock($conn, $oldItems, +1, [
+                        'sumber'     => 'Penjualan',
+                        'aksi'       => 'Hapus Penjualan',
+                        'keterangan' => "Hapus Nota {$oldRow['kode_transaksi']} ({$oldRow['nama_pembeli']})",
+                    ]);
                     $conn->commit();
 
                     header("Location: " . appUrl("pupuk/?{$viewQuery}status=deleted&karung=" . urlencode($karungLabel)));

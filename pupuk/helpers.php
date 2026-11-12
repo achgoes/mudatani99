@@ -276,6 +276,59 @@ if ($chkAlamatJual && $chkAlamatJual->num_rows === 0) {
     $conn->query("ALTER TABLE `penjualan_pupuk` ADD COLUMN `alamat_pembeli` VARCHAR(255) DEFAULT '-' AFTER `nama_pembeli`");
 }
 
+// 11. Pastikan tabel riwayat_stok_pupuk tersedia
+$conn->query("CREATE TABLE IF NOT EXISTS `riwayat_stok_pupuk` (
+    `id` INT(11) NOT NULL AUTO_INCREMENT,
+    `pengelolaan_pupuk_id` INT(11) DEFAULT NULL,
+    `pupuk_id` INT(11) DEFAULT NULL,
+    `nama_pupuk` VARCHAR(100) NOT NULL,
+    `sumber` VARCHAR(50) NOT NULL DEFAULT 'Kelola Stok',
+    `aksi` VARCHAR(60) NOT NULL DEFAULT 'Tambah Stok',
+    `karung_sebelum` VARCHAR(50) NOT NULL DEFAULT '0 Karung',
+    `berat_sebelum` VARCHAR(50) NOT NULL DEFAULT '0 Kg',
+    `perubahan_karung` VARCHAR(50) NOT NULL DEFAULT '0 Karung',
+    `perubahan_berat` VARCHAR(50) NOT NULL DEFAULT '0 Kg',
+    `karung_sesudah` VARCHAR(50) NOT NULL DEFAULT '0 Karung',
+    `berat_sesudah` VARCHAR(50) NOT NULL DEFAULT '0 Kg',
+    `keterangan` VARCHAR(255) DEFAULT '-',
+    `dicatat_oleh` VARCHAR(100) DEFAULT '-',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_rsp_pengelolaan` (`pengelolaan_pupuk_id`),
+    KEY `idx_rsp_pupuk` (`pupuk_id`),
+    KEY `idx_rsp_sumber` (`sumber`),
+    KEY `idx_rsp_created` (`created_at`),
+    CONSTRAINT `fk_rsp_pengelolaan` FOREIGN KEY (`pengelolaan_pupuk_id`) REFERENCES `pengelolaan_pupuk` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT `fk_rsp_master` FOREIGN KEY (`pupuk_id`) REFERENCES `master_produk` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+// Backfill stok awal satu kali jika riwayat_stok_pupuk masih kosong
+$conn->query("
+    INSERT INTO `riwayat_stok_pupuk` (
+        `pengelolaan_pupuk_id`, `pupuk_id`, `nama_pupuk`, `sumber`, `aksi`,
+        `karung_sebelum`, `berat_sebelum`, `perubahan_karung`, `perubahan_berat`,
+        `karung_sesudah`, `berat_sesudah`, `keterangan`, `dicatat_oleh`, `created_at`
+    )
+    SELECT
+        p.`id`,
+        p.`pupuk_id`,
+        COALESCE(m.`nama_produk`, p.`nama_pupuk`),
+        'Kelola Stok',
+        'Stok Awal',
+        '0 Karung',
+        '0 Kg',
+        CONCAT('+', p.`jumlah_karung`),
+        CONCAT('+', p.`jumlah_berat`),
+        p.`jumlah_karung`,
+        p.`jumlah_berat`,
+        COALESCE(NULLIF(p.`keterangan`, ''), '-'),
+        'Sistem',
+        p.`created_at`
+    FROM `pengelolaan_pupuk` p
+    LEFT JOIN `master_produk` m ON p.`pupuk_id` = m.`id` AND m.`jenis` = 'Pupuk'
+    WHERE NOT EXISTS (SELECT 1 FROM `riwayat_stok_pupuk` LIMIT 1)
+");
+
 /**
  * Format teks otomatis menjadi Title Case (Huruf depan kapital, sisanya kecil)
  */
@@ -344,14 +397,92 @@ function parseRupiahFloat($val): float {
 }
 
 /**
+ * Format selisih karung bertanda (+/-) untuk log riwayat stok.
+ */
+function formatDeltaKarungStr(int $delta): string {
+    if ($delta > 0) return '+' . $delta . ' Karung';
+    if ($delta < 0) return $delta . ' Karung';
+    return '0 Karung';
+}
+
+/**
+ * Format selisih berat bertanda (+/-) untuk log riwayat stok.
+ */
+function formatDeltaBeratStr(float $delta): string {
+    $abs = abs($delta);
+    $numStr = (floor($abs) == $abs)
+        ? (string)(int)$abs
+        : rtrim(rtrim(number_format($abs, 2, '.', ''), '0'), '.');
+    if ($delta > 0.0001) return '+' . $numStr . ' Kg';
+    if ($delta < -0.0001) return '-' . $numStr . ' Kg';
+    return '0 Kg';
+}
+
+/**
+ * Mencatat aktivitas perubahan stok ke tabel riwayat_stok_pupuk.
+ */
+function recordRiwayatStokPupuk(
+    mysqli $conn,
+    ?int $pengelolaanId,
+    ?int $pupukId,
+    string $namaPupuk,
+    string $sumber,
+    string $aksi,
+    string $karungSebelum,
+    string $beratSebelum,
+    string $perubahanKarung,
+    string $perubahanBerat,
+    string $karungSesudah,
+    string $beratSesudah,
+    string $keterangan = '-'
+): void {
+    $dicatatOleh = formatTitleCase($_SESSION['nama'] ?? ($_SESSION['username'] ?? '-'));
+    $cleanNama   = mb_substr(formatTitleCase($namaPupuk), 0, 100, 'UTF-8');
+    $cleanKet    = mb_substr(trim($keterangan) !== '' ? formatTitleCase($keterangan) : '-', 0, 255, 'UTF-8');
+
+    $stmt = $conn->prepare("
+        INSERT INTO riwayat_stok_pupuk (
+            pengelolaan_pupuk_id, pupuk_id, nama_pupuk, sumber, aksi,
+            karung_sebelum, berat_sebelum, perubahan_karung, perubahan_berat,
+            karung_sesudah, berat_sesudah, keterangan, dicatat_oleh
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ");
+    if ($stmt) {
+        $stmt->bind_param(
+            "iisssssssssss",
+            $pengelolaanId,
+            $pupukId,
+            $cleanNama,
+            $sumber,
+            $aksi,
+            $karungSebelum,
+            $beratSebelum,
+            $perubahanKarung,
+            $perubahanBerat,
+            $karungSesudah,
+            $beratSesudah,
+            $cleanKet,
+            $dicatatOleh
+        );
+        $stmt->execute();
+        $stmt->close();
+    }
+}
+
+/**
  * Sesuaikan stok jumlah_karung & jumlah_berat pada tabel pengelolaan_pupuk
  * $deltaKarung > 0 berarti menambah/mengembalikan stok, $deltaKarung < 0 berarti mengurangi stok
  */
-function adjustStokPengelolaanPupuk(mysqli $conn, ?int $pengelolaanId, ?int $pupukId, int $deltaKarung, float $deltaBerat): bool {
+function adjustStokPengelolaanPupuk(mysqli $conn, ?int $pengelolaanId, ?int $pupukId, int $deltaKarung, float $deltaBerat, array $logMeta = []): bool {
     $targetRow = null;
 
     if ($pengelolaanId && $pengelolaanId > 0) {
-        $stmt = $conn->prepare("SELECT id, jumlah_karung, jumlah_berat FROM pengelolaan_pupuk WHERE id = ? LIMIT 1");
+        $stmt = $conn->prepare("
+            SELECT p.id, p.pupuk_id, COALESCE(m.nama_produk, p.nama_pupuk) AS nama_pupuk, p.jumlah_karung, p.jumlah_berat
+            FROM pengelolaan_pupuk p
+            LEFT JOIN master_produk m ON p.pupuk_id = m.id AND m.jenis = 'Pupuk'
+            WHERE p.id = ? LIMIT 1
+        ");
         if ($stmt) {
             $stmt->bind_param("i", $pengelolaanId);
             $stmt->execute();
@@ -362,7 +493,12 @@ function adjustStokPengelolaanPupuk(mysqli $conn, ?int $pengelolaanId, ?int $pup
     }
 
     if (!$targetRow && $pupukId && $pupukId > 0) {
-        $stmt = $conn->prepare("SELECT id, jumlah_karung, jumlah_berat FROM pengelolaan_pupuk WHERE pupuk_id = ? ORDER BY id ASC LIMIT 1");
+        $stmt = $conn->prepare("
+            SELECT p.id, p.pupuk_id, COALESCE(m.nama_produk, p.nama_pupuk) AS nama_pupuk, p.jumlah_karung, p.jumlah_berat
+            FROM pengelolaan_pupuk p
+            LEFT JOIN master_produk m ON p.pupuk_id = m.id AND m.jenis = 'Pupuk'
+            WHERE p.pupuk_id = ? ORDER BY p.id ASC LIMIT 1
+        ");
         if ($stmt) {
             $stmt->bind_param("i", $pupukId);
             $stmt->execute();
@@ -385,15 +521,40 @@ function adjustStokPengelolaanPupuk(mysqli $conn, ?int $pengelolaanId, ?int $pup
         $deltaBerat = $deltaKarung * $beratPerKarung;
     }
 
-    $newKarungStr = formatKarungStr($currKarung + $deltaKarung);
-    $newBeratStr  = formatBeratStr($currBerat + $deltaBerat);
+    $newKarungNum = max(0, $currKarung + $deltaKarung);
+    $newBeratNum  = max(0.0, $currBerat + $deltaBerat);
+    $newKarungStr = formatKarungStr($newKarungNum);
+    $newBeratStr  = formatBeratStr($newBeratNum);
     $targetId     = (int)$targetRow['id'];
+    $targetPupuk  = !empty($targetRow['pupuk_id']) ? (int)$targetRow['pupuk_id'] : $pupukId;
 
     $upd = $conn->prepare("UPDATE pengelolaan_pupuk SET jumlah_karung = ?, jumlah_berat = ? WHERE id = ?");
     if ($upd) {
         $upd->bind_param("ssi", $newKarungStr, $newBeratStr, $targetId);
         $ok = $upd->execute();
         $upd->close();
+
+        if ($ok && empty($logMeta['skip_log']) && ($deltaKarung !== 0 || abs($deltaBerat) > 0.0001)) {
+            $sumber = (string)($logMeta['sumber'] ?? 'Transaksi');
+            $aksi   = (string)($logMeta['aksi'] ?? ($deltaKarung < 0 ? 'Stok Keluar' : 'Stok Kembali'));
+            $ket    = (string)($logMeta['keterangan'] ?? '-');
+            recordRiwayatStokPupuk(
+                $conn,
+                $targetId,
+                $targetPupuk,
+                (string)$targetRow['nama_pupuk'],
+                $sumber,
+                $aksi,
+                formatKarungStr($currKarung),
+                formatBeratStr($currBerat),
+                formatDeltaKarungStr($newKarungNum - $currKarung),
+                formatDeltaBeratStr($newBeratNum - $currBerat),
+                $newKarungStr,
+                $newBeratStr,
+                $ket
+            );
+        }
+
         return $ok;
     }
     return false;
@@ -526,14 +687,14 @@ function saveHutangItems(mysqli $conn, int $hutangId, array $items): void {
 /**
  * Menyesuaikan stok pengelolaan_pupuk untuk sekumpulan item ($sign = -1 mengurangi, +1 mengembalikan).
  */
-function adjustHutangItemsStock(mysqli $conn, array $items, int $sign): void {
+function adjustHutangItemsStock(mysqli $conn, array $items, int $sign, array $logMeta = []): void {
     foreach ($items as $item) {
         $pId = !empty($item['pengelolaan_pupuk_id']) ? (int)$item['pengelolaan_pupuk_id'] : null;
         $mId = !empty($item['pupuk_id']) ? (int)$item['pupuk_id'] : null;
         $k   = (int)($item['karung_num'] ?? parseKarungInt($item['jumlah_karung'] ?? ''));
         $b   = (float)($item['berat_num'] ?? parseBeratFloat($item['jumlah_berat'] ?? ''));
         if ($k > 0 || $b > 0) {
-            adjustStokPengelolaanPupuk($conn, $pId, $mId, $sign * $k, $sign * $b);
+            adjustStokPengelolaanPupuk($conn, $pId, $mId, $sign * $k, $sign * $b, $logMeta);
         }
     }
 }

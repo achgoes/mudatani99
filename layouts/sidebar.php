@@ -18,6 +18,7 @@ $sidebarMenu = [
         ]],
         ['type' => 'group', 'label' => 'Inventaris Pupuk', 'icon' => 'fa-flask-vial', 'submenu' => [
             ['label' => 'Stok Pupuk', 'route' => 'pupuk', 'view' => null],
+            ['label' => 'Riwayat Stok Pupuk', 'route' => 'pupuk', 'view' => 'riwayat_stok'],
             ['label' => 'Penjualan', 'route' => 'pupuk', 'view' => 'penjualan'],
             ['label' => 'Riwayat Penjualan', 'route' => 'pupuk', 'view' => 'riwayat_penjualan'],
             ['label' => 'Hutang Piutang', 'route' => 'pupuk', 'view' => 'hutang'],
@@ -28,17 +29,6 @@ $sidebarMenu = [
         ]],
         ['type' => 'group', 'label' => 'Inventaris Tanaman', 'icon' => 'fa-wheat-awn', 'submenu' => [
             ['label' => 'Pengelolaan Tanaman', 'route' => 'tanaman', 'view' => null],
-        ]],
-        ['type' => 'group', 'label' => 'Kas & Transaksi', 'icon' => 'fa-money-bill-transfer', 'submenu' => [
-            ['label' => 'Buku Kas Masuk', 'route' => 'transaksi', 'view' => null],
-            ['label' => 'Buku Kas Keluar', 'route' => 'transaksi', 'view' => 'keluar'],
-            ['label' => 'Laporan Keuangan Kas', 'route' => 'transaksi', 'view' => 'laporan'],
-        ]],
-    ]],
-    ['title' => 'Konfigurasi', 'items' => [
-        ['type' => 'group', 'label' => 'Pengaturan', 'icon' => 'fa-gear', 'submenu' => [
-            ['label' => 'Profil Kelompok Tani', 'route' => 'pengaturan', 'view' => null],
-            ['label' => 'Pengaturan Akun & Sandi', 'route' => 'pengaturan', 'view' => 'akun'],
         ]],
     ]],
 ];

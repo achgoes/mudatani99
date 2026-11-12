@@ -717,6 +717,22 @@ function filterPenjualanTable() {
     );
 }
 
+function applyRiwayatStokDateFilter() {
+    normalizeDateInputsOrder('riwayat-stok-date-from', 'riwayat-stok-date-to');
+    filterRiwayatStokTable();
+}
+
+function filterRiwayatStokTable() {
+    applyDateRangeAndFilter(
+        'riwayat-stok',
+        '.riwayat-stok-row-item',
+        'riwayat-stok-sumber-filter',
+        'table-riwayat-stok-tbody',
+        'table-riwayat-stok-empty-filter',
+        'Tidak ada riwayat pengelolaan stok pupuk yang sesuai dengan pencarian atau filter yang dipilih.'
+    );
+}
+
 function togglePenjualanAlamatField(mode) {
     const sel = document.getElementById(`${mode}-penjualan-anggota`);
     const wrap = document.getElementById(`${mode}-penjualan-alamat-wrap`);
@@ -1269,6 +1285,18 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         pDateFromEl.addEventListener('change', checkClearPenjualanDate);
         pDateToEl.addEventListener('change', checkClearPenjualanDate);
+    }
+
+    const rsDateFromEl = document.getElementById('riwayat-stok-date-from');
+    const rsDateToEl   = document.getElementById('riwayat-stok-date-to');
+    if (rsDateFromEl && rsDateToEl) {
+        const checkClearRiwayatStokDate = () => {
+            if (!rsDateFromEl.value && !rsDateToEl.value) {
+                filterRiwayatStokTable();
+            }
+        };
+        rsDateFromEl.addEventListener('change', checkClearRiwayatStokDate);
+        rsDateToEl.addEventListener('change', checkClearRiwayatStokDate);
     }
 
     // Tampilkan toast notifikasi dari konfigurasi PHP (views/toast-config.php)

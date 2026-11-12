@@ -115,7 +115,11 @@ if ($action === 'add_hutang') {
                     $insStmt->close();
 
                     saveHutangItems($conn, $newHutangId, $items);
-                    adjustHutangItemsStock($conn, $items, -1);
+                    adjustHutangItemsStock($conn, $items, -1, [
+                        'sumber'     => 'Hutang Piutang',
+                        'aksi'       => 'Hutang Pupuk',
+                        'keterangan' => "Hutang {$nama_petani}",
+                    ]);
 
                     syncRiwayatHutangRow($conn, $newHutangId);
                     ensureBackfillPembayaranHutang($conn);
@@ -222,10 +226,18 @@ if ($action === 'add_hutang') {
                 $conn->begin_transaction();
 
                 // 1. Kembalikan stok seluruh item lama
-                adjustHutangItemsStock($conn, $oldItems, +1);
+                adjustHutangItemsStock($conn, $oldItems, +1, [
+                    'sumber'     => 'Hutang Piutang',
+                    'aksi'       => 'Revisi Hutang (Kembali)',
+                    'keterangan' => "Edit Hutang {$nama_petani}",
+                ]);
 
                 // 2. Kurangi stok seluruh item baru
-                adjustHutangItemsStock($conn, $newItems, -1);
+                adjustHutangItemsStock($conn, $newItems, -1, [
+                    'sumber'     => 'Hutang Piutang',
+                    'aksi'       => 'Revisi Hutang (Keluar)',
+                    'keterangan' => "Edit Hutang {$nama_petani}",
+                ]);
 
                 // 3. Update baris hutang_pupuk
                 $updStmt = $conn->prepare("
@@ -309,7 +321,11 @@ if ($action === 'add_hutang') {
                 $delH->bind_param("i", $id);
                 if ($delH->execute()) {
                     $delH->close();
-                    adjustHutangItemsStock($conn, $oldItems, +1);
+                    adjustHutangItemsStock($conn, $oldItems, +1, [
+                        'sumber'     => 'Hutang Piutang',
+                        'aksi'       => 'Hapus Hutang',
+                        'keterangan' => "Hapus Hutang {$oldRow['nama_petani']}",
+                    ]);
 
                     header("Location: " . appUrl("pupuk/?{$viewQuery}status=deleted&karung=" . urlencode($karungLabel)));
                     exit;

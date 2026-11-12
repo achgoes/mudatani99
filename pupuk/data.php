@@ -402,3 +402,54 @@ if ($resRiwayatJual) {
         }
     }
 }
+
+// 8. Riwayat Pengelolaan Stok Pupuk (Seluruh perubahan stok gudang)
+$riwayatStokList      = [];
+$countStokMasuk       = 0;
+$countStokKeluar      = 0;
+$countStokEditHapus   = 0;
+$totalKarungMasukLog  = 0;
+$totalKarungKeluarLog = 0;
+
+$resRiwayatStok = $conn->query("
+    SELECT r.id, r.pengelolaan_pupuk_id, r.pupuk_id,
+           COALESCE(m.nama_produk, p.nama_pupuk, r.nama_pupuk) AS nama_pupuk,
+           r.sumber, r.aksi,
+           r.karung_sebelum, r.berat_sebelum,
+           r.perubahan_karung, r.perubahan_berat,
+           r.karung_sesudah, r.berat_sesudah,
+           r.keterangan, r.dicatat_oleh, r.created_at
+    FROM riwayat_stok_pupuk r
+    LEFT JOIN pengelolaan_pupuk p ON r.pengelolaan_pupuk_id = p.id
+    LEFT JOIN master_produk m ON COALESCE(p.pupuk_id, r.pupuk_id) = m.id AND m.jenis = 'Pupuk'
+    ORDER BY r.id DESC
+");
+if ($resRiwayatStok) {
+    while ($row = $resRiwayatStok->fetch_assoc()) {
+        $row['nama_pupuk']   = formatTitleCase($row['nama_pupuk']);
+        $row['dicatat_oleh'] = formatTitleCase($row['dicatat_oleh'] ?: '-');
+        $row['keterangan']   = formatTitleCase($row['keterangan'] ?: '-');
+
+        $deltaSign = 0;
+        if (strpos((string)$row['perubahan_karung'], '+') === 0) {
+            $deltaSign = 1;
+        } elseif (strpos((string)$row['perubahan_karung'], '-') === 0) {
+            $deltaSign = -1;
+        }
+        $deltaNum = parseKarungInt($row['perubahan_karung']);
+        $row['delta_sign'] = $deltaSign;
+
+        if ($row['aksi'] === 'Edit Stok' || $row['aksi'] === 'Hapus Stok') {
+            $countStokEditHapus++;
+        }
+        if ($deltaSign > 0) {
+            $countStokMasuk++;
+            $totalKarungMasukLog += $deltaNum;
+        } elseif ($deltaSign < 0) {
+            $countStokKeluar++;
+            $totalKarungKeluarLog += $deltaNum;
+        }
+
+        $riwayatStokList[] = $row;
+    }
+}

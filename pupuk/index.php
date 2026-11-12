@@ -16,7 +16,11 @@ require_once __DIR__ . '/actions.php';
 require_once __DIR__ . '/data.php';
 
 // Konfigurasi judul halaman
-if ($activeView === 'penjualan') {
+if ($activeView === 'riwayat_stok') {
+    $pageTitle           = "Riwayat Stok Pupuk | mudatani99 - Sistem Pengelolaan Kelompok Pertanian";
+    $currentMenuTitle    = "Riwayat Stok Pupuk";
+    $currentMenuSubtitle = "Jejak seluruh pengelolaan stok pupuk: tambah baru, akumulasi, edit, hapus, serta perubahan dari transaksi.";
+} elseif ($activeView === 'penjualan') {
     $pageTitle           = "Penjualan Pupuk | mudatani99 - Sistem Pengelolaan Kelompok Pertanian";
     $currentMenuTitle    = "Penjualan Pupuk";
     $currentMenuSubtitle = "Pencatatan transaksi penjualan langsung pupuk (tunai/transfer) yang otomatis mengurangi Stok Pupuk.";
@@ -54,6 +58,8 @@ require_once ROOT_PATH . '/layouts/sidebar.php';
 
             <?php if ($activeView === 'kelola'): ?>
                 <?php require __DIR__ . '/views/view-stok.php'; ?>
+            <?php elseif ($activeView === 'riwayat_stok'): ?>
+                <?php require __DIR__ . '/views/view-riwayat-stok.php'; ?>
             <?php elseif ($activeView === 'penjualan'): ?>
                 <?php require __DIR__ . '/views/view-penjualan.php'; ?>
             <?php elseif ($activeView === 'riwayat_penjualan'): ?>

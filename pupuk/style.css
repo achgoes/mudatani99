@@ -724,6 +724,69 @@
   border: 1px solid #bfdbfe;
 }
 
+.badge-sumber-stok-base {
+  display: inline-block;
+  padding: 0.24rem 0.6rem;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.badge-sumber-stok {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.badge-sumber-jual {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.badge-sumber-hutang {
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.badge-delta-plus {
+  display: inline-block;
+  padding: 0.22rem 0.55rem;
+  border-radius: var(--radius-md);
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+  font-size: 0.76rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.badge-delta-minus {
+  display: inline-block;
+  padding: 0.22rem 0.55rem;
+  border-radius: var(--radius-md);
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  font-size: 0.76rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.badge-delta-neutral {
+  display: inline-block;
+  padding: 0.22rem 0.55rem;
+  border-radius: var(--radius-md);
+  background: #f8fafc;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  font-size: 0.76rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .link-riwayat-ke-hutang {
   color: #15803d;
   font-weight: 700;

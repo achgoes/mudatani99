@@ -4,9 +4,9 @@
  * File: pupuk/actions.php
  */
 
-// Tentukan tampilan submenu aktif: 'kelola' (default), 'penjualan', 'riwayat_penjualan', 'hutang', atau 'riwayat'
+// Tentukan tampilan submenu aktif: 'kelola' (default), 'riwayat_stok', 'penjualan', 'riwayat_penjualan', 'hutang', atau 'riwayat'
 $viewParam  = $_GET['view'] ?? 'kelola';
-$activeView = in_array($viewParam, ['penjualan', 'riwayat_penjualan', 'hutang', 'riwayat'], true) ? $viewParam : 'kelola';
+$activeView = in_array($viewParam, ['riwayat_stok', 'penjualan', 'riwayat_penjualan', 'hutang', 'riwayat'], true) ? $viewParam : 'kelola';
 
 $feedbackMessage = "";
 $feedbackType    = "";
@@ -17,7 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $action     = $_POST['action'] ?? '';
     $returnView = $_POST['return_view'] ?? $activeView;
-    if (!in_array($returnView, ['kelola', 'penjualan', 'riwayat_penjualan', 'hutang', 'riwayat'], true)) {
+    if (!in_array($returnView, ['kelola', 'riwayat_stok', 'penjualan', 'riwayat_penjualan', 'hutang', 'riwayat'], true)) {
         $returnView = 'kelola';
     }
     $viewQuery = ($returnView !== 'kelola') ? "view=" . urlencode($returnView) . "&" : "";

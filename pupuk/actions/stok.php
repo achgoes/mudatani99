@@ -87,6 +87,21 @@ if ($action === 'add') {
                     $updStmt->bind_param("issssi", $pupuk_id, $nama_pupuk, $newKarungStr, $newBeratStr, $finalKeterangan, $targetId);
                     if ($updStmt->execute()) {
                         $updStmt->close();
+                        recordRiwayatStokPupuk(
+                            $conn,
+                            $targetId,
+                            $pupuk_id,
+                            $nama_pupuk,
+                            'Kelola Stok',
+                            'Tambah Akumulasi',
+                            formatKarungStr($currKarung),
+                            formatBeratStr($currBerat),
+                            formatDeltaKarungStr($addKarung),
+                            formatDeltaBeratStr($addBerat),
+                            $newKarungStr,
+                            $newBeratStr,
+                            $keterangan
+                        );
                         header("Location: " . appUrl("pupuk/?status=stock_added&name=" . urlencode($nama_pupuk) . "&add_k=" . $addKarung . "&tot_k=" . $totalKarung . "&tot_b=" . urlencode($newBeratStr)));
                         exit;
                     } else {
@@ -104,7 +119,23 @@ if ($action === 'add') {
                 if ($insStmt) {
                     $insStmt->bind_param("issss", $pupuk_id, $nama_pupuk, $newKarungStr, $newBeratStr, $keterangan);
                     if ($insStmt->execute()) {
+                        $newStokId = (int)$insStmt->insert_id;
                         $insStmt->close();
+                        recordRiwayatStokPupuk(
+                            $conn,
+                            $newStokId,
+                            $pupuk_id,
+                            $nama_pupuk,
+                            'Kelola Stok',
+                            'Tambah Baru',
+                            '0 Karung',
+                            '0 Kg',
+                            formatDeltaKarungStr($addKarung),
+                            formatDeltaBeratStr($addBerat),
+                            $newKarungStr,
+                            $newBeratStr,
+                            $keterangan
+                        );
                         header("Location: " . appUrl("pupuk/?status=added&name=" . urlencode($nama_pupuk)));
                         exit;
                     } else {
@@ -148,11 +179,41 @@ if ($action === 'add') {
             $feedbackMessage = "Nama pupuk yang dipilih tidak ditemukan di Master Obat, Pupuk, dan Tanaman.";
             $feedbackType    = "danger";
         } else {
+            $oldStokStmt = $conn->prepare("SELECT nama_pupuk, jumlah_karung, jumlah_berat FROM pengelolaan_pupuk WHERE id = ? LIMIT 1");
+            $oldStokRow  = null;
+            if ($oldStokStmt) {
+                $oldStokStmt->bind_param("i", $id);
+                $oldStokStmt->execute();
+                $oldStokRes = $oldStokStmt->get_result();
+                $oldStokRow = $oldStokRes ? $oldStokRes->fetch_assoc() : null;
+                $oldStokStmt->close();
+            }
+
             $nama_pupuk = formatTitleCase($pupukRow['nama_produk']);
             $stmt = $conn->prepare("UPDATE pengelolaan_pupuk SET pupuk_id = ?, nama_pupuk = ?, jumlah_karung = ?, jumlah_berat = ?, keterangan = ? WHERE id = ?");
             if ($stmt) {
                 $stmt->bind_param("issssi", $pupuk_id, $nama_pupuk, $jumlah_karung, $jumlah_berat, $keterangan, $id);
                 if ($stmt->execute()) {
+                    $oldK = $oldStokRow ? parseKarungInt($oldStokRow['jumlah_karung']) : parseKarungInt($jumlah_karung);
+                    $oldB = $oldStokRow ? parseBeratFloat($oldStokRow['jumlah_berat']) : parseBeratFloat($jumlah_berat);
+                    $newK = parseKarungInt($jumlah_karung);
+                    $newB = parseBeratFloat($jumlah_berat);
+                    recordRiwayatStokPupuk(
+                        $conn,
+                        $id,
+                        $pupuk_id,
+                        $nama_pupuk,
+                        'Kelola Stok',
+                        'Edit Stok',
+                        formatKarungStr($oldK),
+                        formatBeratStr($oldB),
+                        formatDeltaKarungStr($newK - $oldK),
+                        formatDeltaBeratStr($newB - $oldB),
+                        $jumlah_karung,
+                        $jumlah_berat,
+                        $keterangan
+                    );
+
                     // Sinkronkan nama pupuk pada hutang_pupuk & riwayat_hutang_pupuk
                     $syncH = $conn->prepare("UPDATE hutang_pupuk SET pupuk_id = ?, nama_pupuk = ? WHERE pengelolaan_pupuk_id = ?");
                     if ($syncH) {
@@ -191,10 +252,44 @@ if ($action === 'add') {
 } elseif ($action === 'delete') {
     $id = (int)($_POST['id'] ?? 0);
     if ($id > 0) {
+        $oldStokStmt = $conn->prepare("
+            SELECT p.pupuk_id, COALESCE(m.nama_produk, p.nama_pupuk) AS nama_pupuk, p.jumlah_karung, p.jumlah_berat, p.keterangan
+            FROM pengelolaan_pupuk p
+            LEFT JOIN master_produk m ON p.pupuk_id = m.id AND m.jenis = 'Pupuk'
+            WHERE p.id = ? LIMIT 1
+        ");
+        $oldStokRow = null;
+        if ($oldStokStmt) {
+            $oldStokStmt->bind_param("i", $id);
+            $oldStokStmt->execute();
+            $oldStokRes = $oldStokStmt->get_result();
+            $oldStokRow = $oldStokRes ? $oldStokRes->fetch_assoc() : null;
+            $oldStokStmt->close();
+        }
+
         $stmt = $conn->prepare("DELETE FROM pengelolaan_pupuk WHERE id = ?");
         if ($stmt) {
             $stmt->bind_param("i", $id);
             if ($stmt->execute()) {
+                if ($oldStokRow) {
+                    $oldK = parseKarungInt($oldStokRow['jumlah_karung']);
+                    $oldB = parseBeratFloat($oldStokRow['jumlah_berat']);
+                    recordRiwayatStokPupuk(
+                        $conn,
+                        null,
+                        !empty($oldStokRow['pupuk_id']) ? (int)$oldStokRow['pupuk_id'] : null,
+                        (string)$oldStokRow['nama_pupuk'],
+                        'Kelola Stok',
+                        'Hapus Stok',
+                        formatKarungStr($oldK),
+                        formatBeratStr($oldB),
+                        formatDeltaKarungStr(-$oldK),
+                        formatDeltaBeratStr(-$oldB),
+                        '0 Karung',
+                        '0 Kg',
+                        'Data stok pupuk dihapus dari daftar stok'
+                    );
+                }
                 header("Location: " . appUrl("pupuk/?status=deleted"));
                 exit;
             } else {

@@ -5,6 +5,11 @@
         <span>Stok Pupuk</span>
         <span class="pupuk-tab-badge"><?= count($pupukList) ?></span>
     </a>
+    <a href="<?= appUrl('pupuk/?view=riwayat_stok') ?>" class="pupuk-tab-btn <?= ($activeView === 'riwayat_stok') ? 'active' : '' ?>">
+        <i class="fa-solid fa-boxes-packing"></i>
+        <span>Riwayat Stok Pupuk</span>
+        <span class="pupuk-tab-badge"><?= count($riwayatStokList) ?></span>
+    </a>
     <a href="<?= appUrl('pupuk/?view=penjualan') ?>" class="pupuk-tab-btn <?= ($activeView === 'penjualan') ? 'active' : '' ?>">
         <i class="fa-solid fa-cart-shopping"></i>
         <span>Penjualan</span>

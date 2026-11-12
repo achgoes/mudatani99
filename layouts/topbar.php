@@ -108,29 +108,6 @@ $tanggalServer = "$hariIni, $tglIni $blnIni $thnIni";
 
                 <div class="dropdown-menu-divider"></div>
 
-                <div class="dropdown-menu-items">
-                    <a href="<?= appUrl('pengaturan/?view=akun') ?>" class="dropdown-item-link" role="menuitem">
-                        <div class="dropdown-item-icon icon-emerald">
-                            <i class="fa-solid fa-user-gear"></i>
-                        </div>
-                        <div class="dropdown-item-text">
-                            <span class="font-semibold text-slate-800">Pengaturan Akun</span>
-                            <span class="text-xs text-slate-400">Ubah sandi &amp; data diri</span>
-                        </div>
-                    </a>
-                    <a href="<?= appUrl('pengaturan/') ?>" class="dropdown-item-link" role="menuitem">
-                        <div class="dropdown-item-icon icon-amber">
-                            <i class="fa-solid fa-building-wheat"></i>
-                        </div>
-                        <div class="dropdown-item-text">
-                            <span class="font-semibold text-slate-800">Profil Kelompok Tani</span>
-                            <span class="text-xs text-slate-400">Poktan Harapan Makmur</span>
-                        </div>
-                    </a>
-                </div>
-
-                <div class="dropdown-menu-divider"></div>
-
                 <div class="dropdown-menu-footer">
                     <a href="<?= appUrl('logout.php') ?>" class="dropdown-logout-btn" role="menuitem" title="Keluar dari akun">
                         <i class="fa-solid fa-arrow-right-from-bracket"></i>
