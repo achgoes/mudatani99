@@ -186,6 +186,65 @@
   box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
 }
 
+/* Filter Rentang Tanggal (Dari - Sampai + 1 Tombol Filter) */
+.pupuk-date-filter-group {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.pupuk-date-input {
+  padding: 0.5rem 0.72rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--clr-slate-200);
+  background-color: var(--clr-slate-50);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--clr-slate-700);
+  outline: none;
+  transition: var(--transition-smooth);
+}
+
+.pupuk-date-input:focus {
+  background-color: #ffffff;
+  border-color: var(--clr-agro-500);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+}
+
+.pupuk-date-sep {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--clr-slate-500);
+}
+
+.btn-filter-tanggal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.38rem;
+  padding: 0.54rem 0.9rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid #15803d;
+  background-color: #15803d;
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: var(--transition-smooth);
+}
+
+.btn-filter-tanggal:hover {
+  background-color: #166534;
+  border-color: #166534;
+}
+
+.btn-filter-tanggal:focus-visible {
+  outline: 2px solid #16a34a;
+  outline-offset: 2px;
+}
+
 /* Quick Status Toggle Buttons */
 .btn-table-lunas {
   display: inline-flex;
@@ -353,6 +412,21 @@
   .pupuk-filter-select {
     width: 100%;
   }
+
+  .pupuk-date-filter-group {
+    width: 100%;
+  }
+
+  .pupuk-date-input {
+    flex: 1 1 120px;
+    min-width: 0;
+    min-height: 44px;
+  }
+
+  .btn-filter-tanggal {
+    width: 100%;
+    min-height: 44px;
+  }
 }
 
 /* ==========================================================================
@@ -428,6 +502,36 @@
   color: #ffffff;
   border-color: #2563eb;
   transform: translateY(-1px);
+}
+
+.btn-table-print {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.42rem 0.75rem;
+  border-radius: var(--radius-md);
+  background-color: #f8fafc;
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: var(--transition-smooth);
+}
+
+.btn-table-print:hover {
+  background-color: #0f172a;
+  color: #ffffff;
+  border-color: #0f172a;
+  transform: translateY(-1px);
+}
+
+.btn-table-print:focus-visible,
+.btn-table-info:focus-visible {
+  outline: 2px solid #16a34a;
+  outline-offset: 2px;
 }
 
 .badge-jumlah-bayar {

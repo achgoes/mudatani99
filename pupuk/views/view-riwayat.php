@@ -52,10 +52,21 @@
     <div class="table-card-header">
         <div class="table-title-group">
             <h3>Riwayat Pembayaran Hutang Pupuk Petani</h3>
-            <p>Menampilkan <?= count($pembayaranList) ?> transaksi pembayaran, terbaru di atas. Klik <b>Info</b> untuk melihat seluruh jejak pembayaran satu hutang.</p>
+            <p>Menampilkan <?= count($pembayaranList) ?> transaksi pembayaran (terbaru di atas).</p>
         </div>
 
         <div class="table-card-actions">
+            <!-- Filter Rentang Tanggal -->
+            <div class="pupuk-date-filter-group">
+                <input type="date" id="hutang-date-from" class="pupuk-date-input" aria-label="Dari Tanggal" title="Dari Tanggal">
+                <span class="pupuk-date-sep">s/d</span>
+                <input type="date" id="hutang-date-to" class="pupuk-date-input" aria-label="Sampai Tanggal" title="Sampai Tanggal">
+                <button type="button" class="btn-filter-tanggal" onclick="applyHutangDateFilter()" title="Terapkan Filter Tanggal">
+                    <i class="fa-solid fa-filter"></i>
+                    <span>Filter</span>
+                </button>
+            </div>
+
             <!-- Filter Status (Lunas / Belum Lunas) -->
             <select id="hutang-status-filter" onchange="filterHutangTable()" class="pupuk-filter-select" aria-label="Filter Status Hutang">
                 <option value="ALL">Semua Status</option>
@@ -112,12 +123,15 @@
                             ? strtoupper(mb_substr($bpParts[0], 0, 1) . mb_substr($bpParts[1], 0, 1))
                             : strtoupper(mb_substr($bp['nama_petani'], 0, 2));
                         $bpLunas   = ($bp['status'] === 'Lunas');
-                        $bpTgl     = (!empty($bp['tanggal_bayar']) && $bp['tanggal_bayar'] !== '0000-00-00')
-                            ? date('d/m/Y', strtotime($bp['tanggal_bayar']))
+                        $bpTglIso  = (!empty($bp['tanggal_bayar']) && $bp['tanggal_bayar'] !== '0000-00-00')
+                            ? substr($bp['tanggal_bayar'], 0, 10)
+                            : '';
+                        $bpTgl     = ($bpTglIso !== '')
+                            ? date('d/m/Y', strtotime($bpTglIso))
                             : '-';
                         $bpIcon    = $metodeIconMap[$bp['metode_bayar']] ?? 'fa-money-bill';
                     ?>
-                    <tr class="hutang-row-item" data-status="<?= htmlspecialchars($bp['status']) ?>">
+                    <tr class="hutang-row-item" data-status="<?= htmlspecialchars($bp['status']) ?>" data-tanggal="<?= htmlspecialchars($bpTglIso) ?>">
                         <td class="font-semibold text-slate-500"><?= $no++ ?></td>
                         <td>
                             <span class="badge-tanggal-pupuk">
@@ -131,7 +145,6 @@
                                 <div class="user-avatar-badge"><?= htmlspecialchars($bpInitials) ?></div>
                                 <div class="user-name-cell">
                                     <h4><?= htmlspecialchars($bp['nama_petani']) ?></h4>
-                                    <span>ID Anggota: #<?= (int)$bp['anggota_id'] ?></span>
                                 </div>
                             </div>
                         </td>
@@ -190,11 +203,21 @@
                                     type="button"
                                     class="btn-table-info"
                                     onclick="openModalInfoHutang(<?= (int)$bp['hutang_id'] ?>, <?= (int)$bp['id'] ?>)"
-                                    title="Lihat detail hutang dan seluruh jejak pembayarannya"
+                                    title="Lihat info lengkap hutang dan seluruh riwayat pembayarannya"
                                 >
                                     <i class="fa-solid fa-circle-info"></i>
-                                    <span>Info</span>
+                                    <span>Info Lengkap</span>
                                 </button>
+                                <a
+                                    href="<?= htmlspecialchars(appUrl('pupuk/print-pembayaran.php?id=' . (int)$bp['id'])) ?>"
+                                    target="_blank"
+                                    rel="noopener"
+                                    class="btn-table-print"
+                                    title="Print bukti pembayaran transaksi ini"
+                                >
+                                    <i class="fa-solid fa-print"></i>
+                                    <span>Print</span>
+                                </a>
                             </div>
                         </td>
                     </tr>

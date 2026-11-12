@@ -180,7 +180,12 @@ function openModalEditHutang(data) {
     document.getElementById('edit-hutang-berat').value      = data.jumlah_berat || '';
     document.getElementById('edit-hutang-harga').value      = data.harga || 'Rp 0';
     document.getElementById('edit-hutang-jumlah').value     = data.jumlah_hutang || 'Rp 0';
-    document.getElementById('edit-hutang-sisa').value       = data.sisa_hutang || (data.status === 'Lunas' ? 'Rp 0' : (data.jumlah_hutang || 'Rp 0'));
+    const editSisaInput = document.getElementById('edit-hutang-sisa');
+    const resolvedSisa  = data.sisa_hutang || (data.status === 'Lunas' ? 'Rp 0' : (data.jumlah_hutang || 'Rp 0'));
+    editSisaInput.value = resolvedSisa;
+    const jmlNum  = parseInt(String(data.jumlah_hutang || '0').replace(/[^0-9]/g, ''), 10) || 0;
+    const sisaNum = parseInt(String(resolvedSisa || '0').replace(/[^0-9]/g, ''), 10) || 0;
+    editSisaInput.dataset.syncWithTotal = (data.status !== 'Lunas' && (sisaNum === jmlNum || sisaNum === 0)) ? '1' : '0';
     document.getElementById('edit-hutang-tanggal').value    = (data.tanggal && data.tanggal.length >= 10 && data.tanggal !== '0000-00-00')
         ? data.tanggal.substring(0, 10)
         : new Date().toISOString().split('T')[0];
@@ -212,7 +217,7 @@ function validateHutangForm(formId, mode = 'add') {
     const missingFields = [];
     let firstInvalidEl = null;
 
-    function checkField(id, label, checkNumeric = false) {
+    function checkField(id, label, checkMode = false) {
         const el = document.getElementById(id);
         if (!el) return;
         const val = el.value.trim();
@@ -220,7 +225,12 @@ function validateHutangForm(formId, mode = 'add') {
 
         if (val === '') {
             isInvalid = true;
-        } else if (checkNumeric) {
+        } else if (checkMode === 'rupiah') {
+            const num = parseInt(val.replace(/[^0-9]/g, ''), 10);
+            if (isNaN(num) || num <= 0) {
+                isInvalid = true;
+            }
+        } else if (checkMode) {
             const num = parseFloat(val.replace(/[^0-9.,]/g, '').replace(',', '.'));
             if (isNaN(num) || num <= 0) {
                 isInvalid = true;
@@ -234,12 +244,15 @@ function validateHutangForm(formId, mode = 'add') {
         }
     }
 
+    const statusVal = document.getElementById(`${mode}-hutang-status`)?.value || 'Belum Lunas';
+
     checkField(`${mode}-hutang-anggota`, 'Nama Petani');
     checkField(`${mode}-hutang-pupuk`, 'Nama Pupuk');
     checkField(`${mode}-hutang-karung`, 'Jumlah Karung (> 0)', true);
     checkField(`${mode}-hutang-berat`, 'Jumlah Berat (> 0)', true);
-    checkField(`${mode}-hutang-harga`, 'Harga Satuan');
-    checkField(`${mode}-hutang-jumlah`, 'Jumlah Hutang');
+    checkField(`${mode}-hutang-harga`, 'Harga Satuan (> 0)', 'rupiah');
+    checkField(`${mode}-hutang-jumlah`, 'Jumlah Hutang (> 0)', 'rupiah');
+    checkField(`${mode}-hutang-sisa`, statusVal === 'Lunas' ? 'Sisa Hutang' : 'Sisa Hutang (> 0)', statusVal === 'Lunas' ? false : 'rupiah');
     checkField(`${mode}-hutang-tanggal`, 'Tanggal Pinjam');
     checkField(`${mode}-hutang-status`, 'Status');
 
@@ -323,7 +336,7 @@ function autoCalcTotalHutang(mode) {
     if (sisaInput) {
         if (statusSel && statusSel.value === 'Lunas') {
             sisaInput.value = 'Rp 0';
-        } else if (mode === 'add' || sisaInput.value === '' || sisaInput.value === 'Rp 0') {
+        } else if (mode === 'add' || sisaInput.dataset.syncWithTotal === '1' || sisaInput.value === '' || sisaInput.value === 'Rp 0') {
             sisaInput.value = formattedTotal;
         }
     }
@@ -418,6 +431,28 @@ function filterPupukTable() {
     });
 }
 
+let activeHutangDateFrom = '';
+let activeHutangDateTo   = '';
+
+function applyHutangDateFilter() {
+    const fromEl = document.getElementById('hutang-date-from');
+    const toEl   = document.getElementById('hutang-date-to');
+    let fromVal  = (fromEl?.value || '').trim();
+    let toVal    = (toEl?.value || '').trim();
+
+    if (fromVal && toVal && fromVal > toVal) {
+        const tmp = fromVal;
+        fromVal = toVal;
+        toVal   = tmp;
+        if (fromEl) fromEl.value = fromVal;
+        if (toEl) toEl.value = toVal;
+    }
+
+    activeHutangDateFrom = fromVal;
+    activeHutangDateTo   = toVal;
+    filterHutangTable();
+}
+
 function filterHutangTable() {
     const query        = (document.getElementById('hutang-search-input')?.value || '').toLowerCase();
     const statusFilter = document.getElementById('hutang-status-filter')?.value || 'ALL';
@@ -427,9 +462,19 @@ function filterHutangTable() {
     rows.forEach(row => {
         const text        = row.innerText.toLowerCase();
         const rowStatus   = row.getAttribute('data-status') || '';
+        const rowDate     = row.getAttribute('data-tanggal') || '';
         const matchQuery  = text.includes(query);
         const matchStatus = (statusFilter === 'ALL' || rowStatus === statusFilter);
-        const isShow      = matchQuery && matchStatus;
+
+        let matchDate = true;
+        if (activeHutangDateFrom) {
+            matchDate = matchDate && (rowDate !== '' && rowDate >= activeHutangDateFrom);
+        }
+        if (activeHutangDateTo) {
+            matchDate = matchDate && (rowDate !== '' && rowDate <= activeHutangDateTo);
+        }
+
+        const isShow      = matchQuery && matchStatus && matchDate;
         row.style.display = isShow ? '' : 'none';
         if (isShow) visibleCount++;
     });
@@ -437,15 +482,17 @@ function filterHutangTable() {
     let emptyRow = document.getElementById('table-hutang-empty-filter');
     if (visibleCount === 0 && rows.length > 0) {
         if (!emptyRow) {
+            const tbodyEl = document.getElementById('table-hutang-tbody');
+            const colCount = tbodyEl?.closest('table')?.querySelectorAll('thead th').length || 12;
             emptyRow = document.createElement('tr');
             emptyRow.id = 'table-hutang-empty-filter';
             emptyRow.innerHTML = `
-                <td colspan="12" class="table-empty-cell py-6 text-center text-slate-500">
+                <td colspan="${colCount}" class="table-empty-cell py-6 text-center text-slate-500">
                     <i class="fa-solid fa-magnifying-glass text-2xl mb-2 text-slate-400 block"></i>
-                    Tidak ada data hutang / pelunasan pupuk yang sesuai dengan pencarian atau filter status.
+                    Tidak ada data hutang / pelunasan pupuk yang sesuai dengan pencarian atau filter yang dipilih.
                 </td>
             `;
-            document.getElementById('table-hutang-tbody')?.appendChild(emptyRow);
+            tbodyEl?.appendChild(emptyRow);
         }
         emptyRow.style.display = '';
     } else if (emptyRow) {
@@ -487,8 +534,16 @@ function openModalInfoHutang(hutangId, highlightBayarId = 0) {
 
     document.getElementById('info-hutang-avatar').innerText = initials;
     document.getElementById('info-hutang-nama-petani').innerText = namaPetani;
-    const alamatInfo = h.alamat_petani ? ` • ${h.alamat_petani}` : '';
-    document.getElementById('info-hutang-sub-petani').innerText = `ID Anggota: #${h.anggota_id || 0}${alamatInfo}`;
+    const subPetaniEl = document.getElementById('info-hutang-sub-petani');
+    if (subPetaniEl) {
+        if (h.alamat_petani) {
+            subPetaniEl.innerText = h.alamat_petani;
+            subPetaniEl.style.display = '';
+        } else {
+            subPetaniEl.innerText = '';
+            subPetaniEl.style.display = 'none';
+        }
+    }
 
     const isLunas = (h.status === 'Lunas');
     const statusWrap = document.getElementById('info-hutang-status-wrap');
@@ -522,6 +577,7 @@ function openModalInfoHutang(hutangId, highlightBayarId = 0) {
     const badgeEl = document.getElementById('info-riwayat-badge');
     if (badgeEl) badgeEl.innerText = `${historyList.length} Transaksi`;
 
+    const printBaseUrl = (typeof PUPUK_PRINT_BAYAR_URL !== 'undefined') ? PUPUK_PRINT_BAYAR_URL : 'print-pembayaran.php';
     const tbody = document.getElementById('info-riwayat-tbody');
     if (tbody) {
         if (historyList.length === 0) {
@@ -535,7 +591,8 @@ function openModalInfoHutang(hutangId, highlightBayarId = 0) {
             `;
         } else {
             tbody.innerHTML = historyList.map(item => {
-                const isHighlighted = highlightBayarId > 0 && parseInt(item.id, 10) === parseInt(highlightBayarId, 10);
+                const bayarId = parseInt(item.id, 10) || 0;
+                const isHighlighted = highlightBayarId > 0 && bayarId === parseInt(highlightBayarId, 10);
                 const itemLunas = item.status === 'Lunas';
                 const rowClass = isHighlighted ? 'info-riwayat-row-highlight' : '';
                 const stBadge = itemLunas
@@ -561,6 +618,17 @@ function openModalInfoHutang(hutangId, highlightBayarId = 0) {
                     </tr>
                 `;
             }).join('');
+        }
+    }
+
+    const btnPrintBukti = document.getElementById('btn-info-print-bukti');
+    if (btnPrintBukti) {
+        if (highlightBayarId > 0) {
+            btnPrintBukti.href = `${printBaseUrl}?id=${encodeURIComponent(highlightBayarId)}`;
+            btnPrintBukti.style.display = 'inline-flex';
+        } else {
+            btnPrintBukti.href = '#';
+            btnPrintBukti.style.display = 'none';
         }
     }
 
@@ -664,6 +732,27 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
     });
+
+    const editSisaEl = document.getElementById('edit-hutang-sisa');
+    if (editSisaEl) {
+        editSisaEl.addEventListener('input', () => {
+            editSisaEl.dataset.syncWithTotal = '0';
+        });
+    }
+
+    const dateFromEl = document.getElementById('hutang-date-from');
+    const dateToEl   = document.getElementById('hutang-date-to');
+    if (dateFromEl && dateToEl) {
+        const checkClearDateFilter = () => {
+            if (!dateFromEl.value && !dateToEl.value && (activeHutangDateFrom || activeHutangDateTo)) {
+                activeHutangDateFrom = '';
+                activeHutangDateTo   = '';
+                filterHutangTable();
+            }
+        };
+        dateFromEl.addEventListener('change', checkClearDateFilter);
+        dateToEl.addEventListener('change', checkClearDateFilter);
+    }
 
     // Tampilkan toast notifikasi dari konfigurasi PHP (views/toast-config.php)
     if (window.PUPUK_TOAST) {

@@ -166,6 +166,17 @@ if ($action === 'add') {
                         $syncR->execute();
                         $syncR->close();
                     }
+                    $syncB = $conn->prepare("
+                        UPDATE pembayaran_hutang_pupuk b
+                        INNER JOIN hutang_pupuk h ON b.hutang_id = h.id
+                        SET b.nama_pupuk = ?
+                        WHERE h.pengelolaan_pupuk_id = ?
+                    ");
+                    if ($syncB) {
+                        $syncB->bind_param("si", $nama_pupuk, $id);
+                        $syncB->execute();
+                        $syncB->close();
+                    }
 
                     header("Location: " . appUrl("pupuk/?status=updated&name=" . urlencode($nama_pupuk)));
                     exit;

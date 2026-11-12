@@ -52,7 +52,6 @@
                                 </div>
                                 <div class="user-name-cell">
                                     <h4><?= htmlspecialchars($row['nama_obat']) ?></h4>
-                                    <span>ID Master: #<?= (int)($row['obat_id'] ?? $row['id']) ?></span>
                                 </div>
                             </div>
                         </td>

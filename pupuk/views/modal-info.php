@@ -20,7 +20,7 @@
                     <div class="user-avatar-badge" id="info-hutang-avatar">PT</div>
                     <div>
                         <h5 id="info-hutang-nama-petani">-</h5>
-                        <p id="info-hutang-sub-petani">ID Anggota: #0</p>
+                        <p id="info-hutang-sub-petani" style="display: none;"></p>
                     </div>
                 </div>
                 <div id="info-hutang-status-wrap"></div>
@@ -107,6 +107,10 @@
 
         <div class="custom-modal-footer">
             <button type="button" class="btn-modal-cancel" onclick="closeModal('modalInfoHutang')">Tutup</button>
+            <a href="#" target="_blank" rel="noopener" class="btn-modal-save bg-slate-800 hover:bg-slate-900 shadow-slate-800/20" id="btn-info-print-bukti" style="display: none; text-decoration: none;">
+                <i class="fa-solid fa-print mr-1"></i>
+                Print Bukti Pembayaran
+            </a>
             <button type="button" class="btn-modal-save bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30" id="btn-info-bayar-sekarang" style="display: none;">
                 <i class="fa-solid fa-money-bill-wave mr-1"></i>
                 Bayar Hutang Ini

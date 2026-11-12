@@ -52,10 +52,21 @@
     <div class="table-card-header">
         <div class="table-title-group">
             <h3>Daftar Hutang Piutang Pupuk Petani</h3>
-            <p>Menampilkan <?= count($hutangList) ?> data hutang piutang pupuk petani (tersinkronisasi otomatis dengan data Stok Pupuk).</p>
+            <p>Menampilkan <?= count($hutangList) ?> data hutang pupuk petani.</p>
         </div>
 
         <div class="table-card-actions">
+            <!-- Filter Rentang Tanggal -->
+            <div class="pupuk-date-filter-group">
+                <input type="date" id="hutang-date-from" class="pupuk-date-input" aria-label="Dari Tanggal" title="Dari Tanggal">
+                <span class="pupuk-date-sep">s/d</span>
+                <input type="date" id="hutang-date-to" class="pupuk-date-input" aria-label="Sampai Tanggal" title="Sampai Tanggal">
+                <button type="button" class="btn-filter-tanggal" onclick="applyHutangDateFilter()" title="Terapkan Filter Tanggal">
+                    <i class="fa-solid fa-filter"></i>
+                    <span>Filter</span>
+                </button>
+            </div>
+
             <!-- Filter Status (Lunas / Belum Lunas) -->
             <select id="hutang-status-filter" onchange="filterHutangTable()" class="pupuk-filter-select" aria-label="Filter Status Hutang">
                 <option value="ALL">Semua Status</option>
@@ -113,18 +124,21 @@
                             $initials = strtoupper(mb_substr($row['nama_petani'], 0, 2));
                         }
                         $isLunas = ($row['status'] === 'Lunas');
-                        $tglFormatted = (!empty($row['tanggal']) && $row['tanggal'] !== '0000-00-00')
-                            ? date('d/m/Y', strtotime($row['tanggal']))
-                            : (!empty($row['created_at']) ? date('d/m/Y', strtotime($row['created_at'])) : '-');
+                        $tglRawSource = (!empty($row['tanggal']) && $row['tanggal'] !== '0000-00-00')
+                            ? $row['tanggal']
+                            : (!empty($row['created_at']) ? substr($row['created_at'], 0, 10) : '');
+                        $tglIso = preg_match('/^\d{4}-\d{2}-\d{2}/', (string)$tglRawSource, $mTgl) ? $mTgl[0] : '';
+                        $tglFormatted = ($tglIso !== '')
+                            ? date('d/m/Y', strtotime($tglIso))
+                            : '-';
                     ?>
-                    <tr class="hutang-row-item" data-status="<?= htmlspecialchars($row['status']) ?>">
+                    <tr class="hutang-row-item" data-status="<?= htmlspecialchars($row['status']) ?>" data-tanggal="<?= htmlspecialchars($tglIso) ?>">
                         <td class="font-semibold text-slate-500"><?= $no++ ?></td>
                         <td>
                             <div class="user-profile-cell">
                                 <div class="user-avatar-badge"><?= htmlspecialchars($initials) ?></div>
                                 <div class="user-name-cell">
                                     <h4><?= htmlspecialchars($row['nama_petani']) ?></h4>
-                                    <span>ID Anggota: #<?= (int)$row['anggota_id'] ?></span>
                                 </div>
                             </div>
                         </td>

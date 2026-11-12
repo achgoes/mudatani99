@@ -16,16 +16,3 @@
         <span class="pupuk-tab-badge"><?= count($pembayaranList) ?></span>
     </a>
 </div>
-
-<!-- Banner Informasi Auto-Sinkronisasi Antar Tabel -->
-<div class="sync-info-banner">
-    <div class="sync-banner-left">
-        <div class="sync-banner-icon">
-            <i class="fa-solid fa-arrows-rotate"></i>
-        </div>
-        <div>
-            <strong>Auto-Sinkronisasi Aktif:</strong>
-            Saat pupuk dipakai pada <b>Hutang Piutang</b>, stok karung &amp; berat pada <b>Stok Pupuk</b> otomatis berkurang. Jika data hutang dihapus, jumlah karung otomatis kembali ke stok gudang.
-        </div>
-    </div>
-</div>

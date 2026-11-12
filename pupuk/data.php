@@ -195,7 +195,7 @@ if ($resHutang) {
             $row['sisa_hutang'] = formatRupiahStr($row['sisa_hutang']);
         }
 
-        $row['keterangan'] = formatTitleCase($row['keterangan']);
+        $row['keterangan'] = stripHutangPaymentNote(formatTitleCase($row['keterangan']));
         $row['tanggal']    = !empty($row['tanggal']) ? $row['tanggal'] : substr($row['created_at'], 0, 10);
 
         $hutangList[] = $row;
@@ -223,11 +223,16 @@ $petaniPembayarIds   = [];
 $resBayar = $conn->query("
     SELECT b.id, b.hutang_id, b.anggota_id,
            COALESCE(a.nama_petani, b.nama_petani) AS nama_petani,
-           b.nama_pupuk, b.pembayaran_ke, b.tanggal_bayar,
+           COALESCE(m.nama_produk, p.nama_pupuk, h.nama_pupuk, b.nama_pupuk) AS nama_pupuk,
+           h.jumlah_karung, h.jumlah_berat,
+           b.pembayaran_ke, b.tanggal_bayar,
            b.total_hutang, b.sisa_sebelum, b.jumlah_bayar, b.sisa_hutang,
            b.metode_bayar, b.status, b.keterangan, b.dicatat_oleh, b.created_at
     FROM pembayaran_hutang_pupuk b
+    LEFT JOIN hutang_pupuk h ON b.hutang_id = h.id
     LEFT JOIN anggota_petani a ON b.anggota_id = a.id
+    LEFT JOIN pengelolaan_pupuk p ON h.pengelolaan_pupuk_id = p.id
+    LEFT JOIN master_produk m ON COALESCE(p.pupuk_id, h.pupuk_id) = m.id AND m.jenis = 'Pupuk'
     ORDER BY b.tanggal_bayar DESC, b.id DESC
 ");
 if ($resBayar) {

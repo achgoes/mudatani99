@@ -108,7 +108,6 @@
                                 </div>
                                 <div class="user-name-cell">
                                     <h4><?= htmlspecialchars($row['nama_produk']) ?></h4>
-                                    <span>ID Produk: #<?= (int)$row['id'] ?></span>
                                 </div>
                             </div>
                         </td>

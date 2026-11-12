@@ -82,7 +82,6 @@
                                 <div class="user-avatar-badge"><?= htmlspecialchars($initials) ?></div>
                                 <div class="user-name-cell">
                                     <h4><?= htmlspecialchars($row['nama_petani']) ?></h4>
-                                    <span>ID Anggota: #<?= (int)$row['id'] ?></span>
                                 </div>
                             </div>
                         </td>

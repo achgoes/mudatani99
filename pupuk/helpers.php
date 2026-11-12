@@ -295,6 +295,110 @@ function adjustStokPengelolaanPupuk(mysqli $conn, ?int $pengelolaanId, ?int $pup
 }
 
 /**
+ * Hapus jejak catatan sistem "Bayar: Rp ..." dari kolom keterangan hutang
+ */
+function stripHutangPaymentNote(?string $keterangan): string {
+    $clean = trim((string)($keterangan ?? ''));
+    if ($clean === '' || $clean === '-') {
+        return '-';
+    }
+    $parts = preg_split('/(?:^|\s*\|\s*)Bayar:\s*Rp\s*[0-9.]+/i', $clean, 2);
+    $base  = trim((string)($parts[0] ?? ''), " \t\n\r\0\x0B|");
+    return ($base === '') ? '-' : $base;
+}
+
+/**
+ * Pastikan baris pembayaran_hutang_pupuk sinkron saat hutang diubah menjadi Lunas atau diedit
+ */
+function syncPembayaranOnHutangUpdate(mysqli $conn, int $hutangId, int $anggotaId, string $namaPetani, string $namaPupuk, int $totalHutangInt, int $sisaHutangInt, string $status, string $ketCatatan = ''): void {
+    $updB = $conn->prepare("UPDATE pembayaran_hutang_pupuk SET anggota_id = ?, nama_petani = ?, nama_pupuk = ?, total_hutang = ? WHERE hutang_id = ?");
+    if ($updB) {
+        $updB->bind_param("issii", $anggotaId, $namaPetani, $namaPupuk, $totalHutangInt, $hutangId);
+        $updB->execute();
+        $updB->close();
+    }
+
+    if ($status === 'Belum Lunas' && ($totalHutangInt <= 0 || $sisaHutangInt >= $totalHutangInt)) {
+        $delB = $conn->prepare("DELETE FROM pembayaran_hutang_pupuk WHERE hutang_id = ?");
+        if ($delB) {
+            $delB->bind_param("i", $hutangId);
+            $delB->execute();
+            $delB->close();
+        }
+        return;
+    }
+
+    $qRows = $conn->prepare("SELECT id, pembayaran_ke, jumlah_bayar, sisa_hutang, status FROM pembayaran_hutang_pupuk WHERE hutang_id = ? ORDER BY pembayaran_ke ASC, id ASC");
+    if (!$qRows) {
+        return;
+    }
+    $qRows->bind_param("i", $hutangId);
+    $qRows->execute();
+    $resRows = $qRows->get_result();
+    $rows = [];
+    $sumBayar = 0;
+    while ($resRows && ($r = $resRows->fetch_assoc())) {
+        $rows[] = $r;
+        $sumBayar += (int)$r['jumlah_bayar'];
+    }
+    $qRows->close();
+
+    if (empty($rows)) {
+        ensureBackfillPembayaranHutang($conn);
+        return;
+    }
+
+    $lastRow = $rows[count($rows) - 1];
+    $lastId  = (int)$lastRow['id'];
+    $lastKe  = (int)$lastRow['pembayaran_ke'];
+
+    if ($status === 'Lunas') {
+        $kurangBayar = max(0, $totalHutangInt - $sumBayar);
+        if ($kurangBayar > 0) {
+            $nextKe      = $lastKe + 1;
+            $tglBayar    = date('Y-m-d');
+            $metode      = 'Tunai';
+            $stLunas     = 'Lunas';
+            $ketStep     = formatTitleCase($ketCatatan !== '' ? $ketCatatan : 'Pelunasan Hutang Pupuk');
+            $dicatatOleh = formatTitleCase($_SESSION['nama'] ?? ($_SESSION['username'] ?? '-'));
+
+            $ins = $conn->prepare("
+                INSERT INTO pembayaran_hutang_pupuk (
+                    hutang_id, anggota_id, nama_petani, nama_pupuk, pembayaran_ke,
+                    tanggal_bayar, total_hutang, sisa_sebelum, jumlah_bayar, sisa_hutang,
+                    metode_bayar, status, keterangan, dicatat_oleh
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+            if ($ins) {
+                $sisaNol = 0;
+                $ins->bind_param(
+                    "iissisiiiissss",
+                    $hutangId, $anggotaId, $namaPetani, $namaPupuk, $nextKe,
+                    $tglBayar, $totalHutangInt, $kurangBayar, $kurangBayar, $sisaNol,
+                    $metode, $stLunas, $ketStep, $dicatatOleh
+                );
+                $ins->execute();
+                $ins->close();
+            }
+        } else {
+            $updLast = $conn->prepare("UPDATE pembayaran_hutang_pupuk SET sisa_hutang = 0, status = 'Lunas' WHERE id = ?");
+            if ($updLast) {
+                $updLast->bind_param("i", $lastId);
+                $updLast->execute();
+                $updLast->close();
+            }
+        }
+    } else {
+        $updLast = $conn->prepare("UPDATE pembayaran_hutang_pupuk SET sisa_hutang = ?, status = 'Belum Lunas' WHERE id = ?");
+        if ($updLast) {
+            $updLast->bind_param("ii", $sisaHutangInt, $lastId);
+            $updLast->execute();
+            $updLast->close();
+        }
+    }
+}
+
+/**
  * Sinkronkan baris hutang_pupuk ke tabel riwayat_hutang_pupuk
  */
 function syncRiwayatHutangRow(mysqli $conn, int $hutangId): void {
@@ -391,7 +495,13 @@ function ensureBackfillPembayaranHutang(mysqli $conn): void {
             $totalVal = (int)round($kNum * $hargaVal);
         }
         $isLunas = (($h['status'] ?? '') === 'Lunas');
-        $sisaVal = $isLunas ? 0 : (int)round(parseRupiahFloat($h['sisa_hutang'] ?? ''));
+        $rawSisaStr = trim((string)($h['sisa_hutang'] ?? ''));
+        $sisaVal = $isLunas ? 0 : (int)round(parseRupiahFloat($rawSisaStr));
+
+        // Status Belum Lunas dengan sisa_hutang kosong/'Rp 0' menandakan belum ada pembayaran (default skema)
+        if (!$isLunas && ($rawSisaStr === '' || $sisaVal <= 0)) {
+            $sisaVal = $totalVal;
+        }
 
         if (!$isLunas && ($totalVal <= 0 || $sisaVal >= $totalVal)) {
             continue;
@@ -495,16 +605,17 @@ if ($isFirstTimeHutangTable) {
 
     if ($hasAnggota && $hasPupuk) {
         $conn->query("SET @disable_hutang_trigger = 1");
+        $todayDate = date('Y-m-d');
         $seedItems = [
-            [1, 1, 'Budi Santoso', 1, 1, 'Pupuk Urea Bersubsidi', '5 Karung', '250 Kg', 'Pinjaman Pupuk Tahap 1 Lahan Blok Utara A-1', 'Belum Lunas', null],
-            [2, 2, 'Siti Aminah', 2, 2, 'Npk Phonska Subsidi', '4 Karung', '200 Kg', 'Pinjaman Pupuk Musim Tanam Blok Timur B-2', 'Lunas', date('Y-m-d H:i:s')],
-            [3, 3, 'Slamet Riyadi', 1, 1, 'Pupuk Urea Bersubsidi', '3 Karung', '150 Kg', 'Pinjaman Pupuk Sawah Tadah Hujan Blok C-1', 'Belum Lunas', null],
-            [4, 5, 'Mulyono Tani', 3, 3, 'Pupuk Organik Petroganik', '4 Karung', '160 Kg', 'Pinjaman Pupuk Dasar Organik Blok Utara A-3', 'Lunas', date('Y-m-d H:i:s')],
+            [1, 1, 'Budi Santoso', 1, 1, 'Pupuk Urea Bersubsidi', '5 Karung', '250 Kg', 'Rp 0', 'Rp 0', 'Rp 0', 'Pinjaman Pupuk Tahap 1 Lahan Blok Utara A-1', $todayDate, 'Belum Lunas', null],
+            [2, 2, 'Siti Aminah', 2, 2, 'Npk Phonska Subsidi', '4 Karung', '200 Kg', 'Rp 0', 'Rp 0', 'Rp 0', 'Pinjaman Pupuk Musim Tanam Blok Timur B-2', $todayDate, 'Lunas', date('Y-m-d H:i:s')],
+            [3, 3, 'Slamet Riyadi', 1, 1, 'Pupuk Urea Bersubsidi', '3 Karung', '150 Kg', 'Rp 0', 'Rp 0', 'Rp 0', 'Pinjaman Pupuk Sawah Tadah Hujan Blok C-1', $todayDate, 'Belum Lunas', null],
+            [4, 5, 'Mulyono Tani', 3, 3, 'Pupuk Organik Petroganik', '4 Karung', '160 Kg', 'Rp 0', 'Rp 0', 'Rp 0', 'Pinjaman Pupuk Dasar Organik Blok Utara A-3', $todayDate, 'Lunas', date('Y-m-d H:i:s')],
         ];
         foreach ($seedItems as $item) {
-            $ins = $conn->prepare("INSERT IGNORE INTO hutang_pupuk (id, anggota_id, nama_petani, pengelolaan_pupuk_id, pupuk_id, nama_pupuk, jumlah_karung, jumlah_berat, keterangan, status, tanggal_lunas) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $ins = $conn->prepare("INSERT IGNORE INTO hutang_pupuk (id, anggota_id, nama_petani, pengelolaan_pupuk_id, pupuk_id, nama_pupuk, jumlah_karung, jumlah_berat, harga, jumlah_hutang, sisa_hutang, keterangan, tanggal, status, tanggal_lunas) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             if ($ins) {
-                $ins->bind_param("iisiissssss", $item[0], $item[1], $item[2], $item[3], $item[4], $item[5], $item[6], $item[7], $item[8], $item[9], $item[10]);
+                $ins->bind_param("iisiissssssssss", $item[0], $item[1], $item[2], $item[3], $item[4], $item[5], $item[6], $item[7], $item[8], $item[9], $item[10], $item[11], $item[12], $item[13], $item[14]);
                 if ($ins->execute() && $ins->affected_rows > 0) {
                     adjustStokPengelolaanPupuk($conn, $item[3], $item[4], -parseKarungInt($item[6]), -parseBeratFloat($item[7]));
                     syncRiwayatHutangRow($conn, $item[0]);

@@ -21,30 +21,40 @@ if ($action === 'add_hutang') {
         $status = 'Belum Lunas';
     }
 
-    $reqKarung      = parseKarungInt($jumlah_karung_raw);
-    $reqBerat       = parseBeratFloat($jumlah_berat_raw);
-    $harga          = formatRupiahStr($harga_raw);
-    $hargaFloat     = parseRupiahFloat($harga);
-    $calcTotalHtg   = $reqKarung * $hargaFloat;
-    $jumlah_hutang  = ($jumlah_hutang_raw !== '') ? formatRupiahStr($jumlah_hutang_raw) : formatRupiahStr($calcTotalHtg);
+    $reqKarung        = parseKarungInt($jumlah_karung_raw);
+    $reqBerat         = parseBeratFloat($jumlah_berat_raw);
+    $harga            = formatRupiahStr($harga_raw);
+    $hargaFloat       = parseRupiahFloat($harga);
+    $calcTotalHtg     = $reqKarung * $hargaFloat;
+    $jumlah_hutang    = ($jumlah_hutang_raw !== '' && parseRupiahFloat($jumlah_hutang_raw) > 0)
+        ? formatRupiahStr($jumlah_hutang_raw)
+        : formatRupiahStr($calcTotalHtg);
+    $totalHutangFloat = parseRupiahFloat($jumlah_hutang);
 
     if ($status === 'Lunas') {
         $sisa_hutang   = 'Rp 0';
         $tanggal_lunas = date('Y-m-d H:i:s');
     } else {
-        $sisa_hutang   = ($sisa_hutang_raw !== '') ? formatRupiahStr($sisa_hutang_raw) : $jumlah_hutang;
+        $sisaFloat     = ($sisa_hutang_raw !== '') ? parseRupiahFloat($sisa_hutang_raw) : $totalHutangFloat;
+        if ($sisaFloat <= 0 && $totalHutangFloat > 0) {
+            $sisaFloat = $totalHutangFloat;
+        } elseif ($totalHutangFloat > 0 && $sisaFloat > $totalHutangFloat) {
+            $sisaFloat = $totalHutangFloat;
+        }
+        $sisa_hutang   = formatRupiahStr($sisaFloat);
         $tanggal_lunas = null;
     }
 
-    $tanggal = (!empty($tanggal_raw)) ? $tanggal_raw : date('Y-m-d');
+    $tanggal = preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggal_raw) ? $tanggal_raw : date('Y-m-d');
 
-    if ($anggota_id <= 0 || $pengelolaan_pupuk_id <= 0 || $reqKarung <= 0 || $reqBerat <= 0) {
-        $feedbackMessage = "Nama Petani, Nama Pupuk, Jumlah Karung (> 0), dan Jumlah Berat (> 0) wajib diisi dengan benar.";
+    if ($anggota_id <= 0 || $pengelolaan_pupuk_id <= 0 || $reqKarung <= 0 || $reqBerat <= 0 || $hargaFloat <= 0 || $totalHutangFloat <= 0) {
+        $feedbackMessage = "Nama Petani, Nama Pupuk, Jumlah Karung (> 0), Jumlah Berat (> 0), dan Harga Satuan (> 0) wajib diisi dengan benar.";
         $feedbackType    = "danger";
     } else {
         if ($keterangan === '') {
             $keterangan = '-';
         }
+        $keterangan = mb_substr($keterangan, 0, 255, 'UTF-8');
 
         // Ambil data petani dari anggota_petani
         $petaniStmt = $conn->prepare("SELECT id, nama_petani FROM anggota_petani WHERE id = ? LIMIT 1");
@@ -75,8 +85,12 @@ if ($action === 'add_hutang') {
             $feedbackType    = "danger";
         } else {
             $tersediaKarung = parseKarungInt($stokRow['jumlah_karung']);
+            $tersediaBerat  = parseBeratFloat($stokRow['jumlah_berat']);
             if ($reqKarung > $tersediaKarung) {
                 $feedbackMessage = "Stok karung untuk {$stokRow['nama_pupuk']} tidak mencukupi! Stok tersedia: {$stokRow['jumlah_karung']}, diminta: {$reqKarung} Karung.";
+                $feedbackType    = "danger";
+            } elseif ($reqBerat > ($tersediaBerat + 0.01)) {
+                $feedbackMessage = "Stok berat untuk {$stokRow['nama_pupuk']} tidak mencukupi! Stok tersedia: {$stokRow['jumlah_berat']}, diminta: " . formatBeratStr($reqBerat) . ".";
                 $feedbackType    = "danger";
             } else {
                 $nama_petani   = formatTitleCase($petaniRow['nama_petani']);
@@ -85,6 +99,7 @@ if ($action === 'add_hutang') {
                 $jumlah_karung = formatKarungStr($reqKarung);
                 $jumlah_berat  = formatBeratStr($reqBerat);
 
+                $conn->begin_transaction();
                 $insStmt = $conn->prepare("
                     INSERT INTO hutang_pupuk (
                         anggota_id, nama_petani, pengelolaan_pupuk_id, pupuk_id,
@@ -118,8 +133,10 @@ if ($action === 'add_hutang') {
                         // Auto-sinkronisasi: kurangi jumlah_karung dan jumlah_berat di pengelolaan_pupuk
                         adjustStokPengelolaanPupuk($conn, $pengelolaan_pupuk_id, $pupuk_id, -$reqKarung, -$reqBerat);
 
-                        // Auto-sinkronisasi: salin ke riwayat_hutang_pupuk
+                        // Auto-sinkronisasi: salin ke riwayat_hutang_pupuk & catat pembayaran jika sudah ada pelunasan/DP
                         syncRiwayatHutangRow($conn, $newHutangId);
+                        ensureBackfillPembayaranHutang($conn);
+                        $conn->commit();
 
                         header("Location: " . appUrl("pupuk/?{$viewQuery}status=added&name=" . urlencode($nama_petani)));
                         exit;
@@ -127,7 +144,10 @@ if ($action === 'add_hutang') {
                         $feedbackMessage = "Gagal menyimpan data hutang piutang: " . $conn->error;
                         $feedbackType    = "danger";
                         $insStmt->close();
+                        $conn->rollback();
                     }
+                } else {
+                    $conn->rollback();
                 }
             }
         }
@@ -150,17 +170,20 @@ if ($action === 'add_hutang') {
         $status = 'Belum Lunas';
     }
 
-    $newKarung      = parseKarungInt($jumlah_karung_raw);
-    $newBerat       = parseBeratFloat($jumlah_berat_raw);
-    $harga          = formatRupiahStr($harga_raw);
-    $hargaFloat     = parseRupiahFloat($harga);
-    $calcTotalHtg   = $newKarung * $hargaFloat;
-    $jumlah_hutang  = ($jumlah_hutang_raw !== '') ? formatRupiahStr($jumlah_hutang_raw) : formatRupiahStr($calcTotalHtg);
+    $newKarung        = parseKarungInt($jumlah_karung_raw);
+    $newBerat         = parseBeratFloat($jumlah_berat_raw);
+    $harga            = formatRupiahStr($harga_raw);
+    $hargaFloat       = parseRupiahFloat($harga);
+    $calcTotalHtg     = $newKarung * $hargaFloat;
+    $jumlah_hutang    = ($jumlah_hutang_raw !== '' && parseRupiahFloat($jumlah_hutang_raw) > 0)
+        ? formatRupiahStr($jumlah_hutang_raw)
+        : formatRupiahStr($calcTotalHtg);
+    $totalHutangFloat = parseRupiahFloat($jumlah_hutang);
 
-    $tanggal = (!empty($tanggal_raw)) ? $tanggal_raw : date('Y-m-d');
+    $tanggal = preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggal_raw) ? $tanggal_raw : date('Y-m-d');
 
-    if ($id <= 0 || $anggota_id <= 0 || $pengelolaan_pupuk_id <= 0 || $newKarung <= 0 || $newBerat <= 0) {
-        $feedbackMessage = "ID, Nama Petani, Nama Pupuk, Jumlah Karung (> 0), dan Jumlah Berat (> 0) wajib diisi.";
+    if ($id <= 0 || $anggota_id <= 0 || $pengelolaan_pupuk_id <= 0 || $newKarung <= 0 || $newBerat <= 0 || $hargaFloat <= 0 || $totalHutangFloat <= 0) {
+        $feedbackMessage = "ID, Nama Petani, Nama Pupuk, Jumlah Karung (> 0), Jumlah Berat (> 0), dan Harga Satuan (> 0) wajib diisi.";
         $feedbackType    = "danger";
     } else {
         if ($keterangan === '') {
@@ -208,16 +231,32 @@ if ($action === 'add_hutang') {
         } else {
             $oldPengelolaanId = $oldRow['pengelolaan_pupuk_id'] ? (int)$oldRow['pengelolaan_pupuk_id'] : null;
             $oldPupukId       = $oldRow['pupuk_id'] ? (int)$oldRow['pupuk_id'] : null;
-            $oldKarung        = parseKarungInt($oldRow['jumlah_karung']);
-            $oldBerat         = parseBeratFloat($oldRow['jumlah_berat']);
+            if (!$oldPengelolaanId && $oldPupukId) {
+                $qOldStok = $conn->prepare("SELECT id FROM pengelolaan_pupuk WHERE pupuk_id = ? ORDER BY id ASC LIMIT 1");
+                if ($qOldStok) {
+                    $qOldStok->bind_param("i", $oldPupukId);
+                    $qOldStok->execute();
+                    $rOldStok = $qOldStok->get_result();
+                    if ($rOldStok && ($rowOldStok = $rOldStok->fetch_assoc())) {
+                        $oldPengelolaanId = (int)$rowOldStok['id'];
+                    }
+                    $qOldStok->close();
+                }
+            }
+            $oldKarung = parseKarungInt($oldRow['jumlah_karung']);
+            $oldBerat  = parseBeratFloat($oldRow['jumlah_berat']);
 
-            $tersediaSekarang = parseKarungInt($stokRow['jumlah_karung']);
-            $batasMaksKarung  = ($oldPengelolaanId === $pengelolaan_pupuk_id)
-                ? ($tersediaSekarang + $oldKarung)
-                : $tersediaSekarang;
+            $tersediaSekarang      = parseKarungInt($stokRow['jumlah_karung']);
+            $tersediaBeratSekarang = parseBeratFloat($stokRow['jumlah_berat']);
+            $isSameStockRow        = ($oldPengelolaanId === $pengelolaan_pupuk_id);
+            $batasMaksKarung       = $isSameStockRow ? ($tersediaSekarang + $oldKarung) : $tersediaSekarang;
+            $batasMaksBerat        = $isSameStockRow ? ($tersediaBeratSekarang + $oldBerat) : $tersediaBeratSekarang;
 
             if ($newKarung > $batasMaksKarung) {
                 $feedbackMessage = "Stok karung untuk {$stokRow['nama_pupuk']} tidak mencukupi! Maksimal karung yang dapat digunakan: {$batasMaksKarung} Karung.";
+                $feedbackType    = "danger";
+            } elseif ($newBerat > ($batasMaksBerat + 0.01)) {
+                $feedbackMessage = "Stok berat untuk {$stokRow['nama_pupuk']} tidak mencukupi! Maksimal berat yang dapat digunakan: " . formatBeratStr($batasMaksBerat) . ".";
                 $feedbackType    = "danger";
             } else {
                 $nama_petani   = formatTitleCase($petaniRow['nama_petani']);
@@ -231,8 +270,20 @@ if ($action === 'add_hutang') {
                     $tanggal_lunas = $oldRow['tanggal_lunas'] ?: date('Y-m-d H:i:s');
                 } else {
                     $tanggal_lunas = null;
-                    $sisa_hutang   = ($sisa_hutang_raw !== '') ? formatRupiahStr($sisa_hutang_raw) : $jumlah_hutang;
+                    $sisaFloat     = ($sisa_hutang_raw !== '') ? parseRupiahFloat($sisa_hutang_raw) : $totalHutangFloat;
+                    if ($sisaFloat <= 0 && $totalHutangFloat > 0) {
+                        $sisaFloat = $totalHutangFloat;
+                    } elseif ($totalHutangFloat > 0 && $sisaFloat > $totalHutangFloat) {
+                        $sisaFloat = $totalHutangFloat;
+                    }
+                    $sisa_hutang = formatRupiahStr($sisaFloat);
+                    if ($sisaFloat >= $totalHutangFloat) {
+                        $keterangan = stripHutangPaymentNote($keterangan);
+                    }
                 }
+                $keterangan = mb_substr($keterangan, 0, 255, 'UTF-8');
+
+                $conn->begin_transaction();
 
                 // 1. Kembalikan stok lama terlebih dahulu
                 adjustStokPengelolaanPupuk($conn, $oldPengelolaanId, $oldPupukId, +$oldKarung, +$oldBerat);
@@ -273,30 +324,21 @@ if ($action === 'add_hutang') {
                         // 4. Sinkronkan ke riwayat_hutang_pupuk & pembayaran_hutang_pupuk
                         syncRiwayatHutangRow($conn, $id);
 
-                        $updB = $conn->prepare("UPDATE pembayaran_hutang_pupuk SET anggota_id = ?, nama_petani = ?, nama_pupuk = ? WHERE hutang_id = ?");
-                        if ($updB) {
-                            $updB->bind_param("issi", $anggota_id, $nama_petani, $nama_pupuk, $id);
-                            $updB->execute();
-                            $updB->close();
-                        }
-                        if ($status === 'Belum Lunas' && parseRupiahFloat($sisa_hutang) >= parseRupiahFloat($jumlah_hutang)) {
-                            $delB = $conn->prepare("DELETE FROM pembayaran_hutang_pupuk WHERE hutang_id = ?");
-                            if ($delB) {
-                                $delB->bind_param("i", $id);
-                                $delB->execute();
-                                $delB->close();
-                            }
-                        } else {
-                            ensureBackfillPembayaranHutang($conn);
-                        }
+                        $totalHutangInt = (int)round($totalHutangFloat);
+                        $sisaHutangInt  = ($status === 'Lunas') ? 0 : (int)round(parseRupiahFloat($sisa_hutang));
+                        syncPembayaranOnHutangUpdate($conn, $id, $anggota_id, $nama_petani, $nama_pupuk, $totalHutangInt, $sisaHutangInt, $status, stripHutangPaymentNote($keterangan));
 
+                        $conn->commit();
                         header("Location: " . appUrl("pupuk/?{$viewQuery}status=updated&name=" . urlencode($nama_petani)));
                         exit;
                     } else {
                         $feedbackMessage = "Gagal memperbarui data hutang: " . $conn->error;
                         $feedbackType    = "danger";
                         $updStmt->close();
+                        $conn->rollback();
                     }
+                } else {
+                    $conn->rollback();
                 }
             }
         }

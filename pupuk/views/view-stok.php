@@ -52,7 +52,7 @@
     <div class="table-card-header">
         <div class="table-title-group">
             <h3>Daftar Stok Pupuk</h3>
-            <p>Menampilkan <?= count($pupukList) ?> data stok pupuk (diambil dari Master Pupuk) beserta sisa jumlah karung, jumlah berat, dan keterangan.</p>
+            <p>Menampilkan <?= count($pupukList) ?> data stok pupuk tersedia.</p>
         </div>
 
         <div class="table-card-actions">
@@ -99,7 +99,6 @@
                                 </div>
                                 <div class="user-name-cell">
                                     <h4><?= htmlspecialchars($row['nama_pupuk']) ?></h4>
-                                    <span>ID Master: #<?= (int)($row['pupuk_id'] ?? $row['id']) ?></span>
                                 </div>
                             </div>
                         </td>
