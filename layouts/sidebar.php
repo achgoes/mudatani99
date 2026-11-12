@@ -18,6 +18,8 @@ $sidebarMenu = [
         ]],
         ['type' => 'group', 'label' => 'Inventaris Pupuk', 'icon' => 'fa-flask-vial', 'submenu' => [
             ['label' => 'Stok Pupuk', 'route' => 'pupuk', 'view' => null],
+            ['label' => 'Penjualan', 'route' => 'pupuk', 'view' => 'penjualan'],
+            ['label' => 'Riwayat Penjualan', 'route' => 'pupuk', 'view' => 'riwayat_penjualan'],
             ['label' => 'Hutang Piutang', 'route' => 'pupuk', 'view' => 'hutang'],
             ['label' => 'Riwayat Hutang / Pelunasan', 'route' => 'pupuk', 'view' => 'riwayat'],
         ]],

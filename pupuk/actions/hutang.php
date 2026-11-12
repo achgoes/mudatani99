@@ -5,173 +5,17 @@
  */
 
 /**
- * Mem-parsing, memvalidasi, dan mengecek ketersediaan stok seluruh item pupuk pada form hutang.
- *
- * @return array{
- *     error: ?string,
- *     items: array<int, array<string, mixed>>,
- *     total_karung: int,
- *     total_berat: float,
- *     total_hutang: float,
- *     summary_nama_pupuk: string
- * }
+ * Pembungkus kompatibilitas untuk mem-parsing item hutang dari helper bersama.
  */
 function parseHutangItemsPayload(mysqli $conn, array $post, array $oldStockAllowance = []): array {
-    $rawIds     = $post['item_pengelolaan_pupuk_id'] ?? null;
-    $rawKarungs = $post['item_jumlah_karung'] ?? null;
-    $rawBerats  = $post['item_jumlah_berat'] ?? null;
-    $rawHargas  = $post['item_harga'] ?? null;
-
-    if (!is_array($rawIds)) {
-        $rawIds     = [$post['pengelolaan_pupuk_id'] ?? ''];
-        $rawKarungs = [$post['jumlah_karung'] ?? ''];
-        $rawBerats  = [$post['jumlah_berat'] ?? ''];
-        $rawHargas  = [$post['harga'] ?? ($post['jumlah_harga'] ?? '')];
-    }
-
-    $rowCount = count($rawIds);
-    $items    = [];
-
-    if ($rowCount === 0) {
-        return [
-            'error'              => 'Minimal satu item pupuk wajib diisi.',
-            'items'              => [],
-            'total_karung'       => 0,
-            'total_berat'        => 0.0,
-            'total_hutang'       => 0.0,
-            'summary_nama_pupuk' => '',
-        ];
-    }
-
-    $stokCache   = [];
-    $requestedBy = [];
-    $stokStmt    = $conn->prepare("
-        SELECT p.id, p.pupuk_id, COALESCE(m.nama_produk, p.nama_pupuk) AS nama_pupuk, p.jumlah_karung, p.jumlah_berat
-        FROM pengelolaan_pupuk p
-        LEFT JOIN master_produk m ON p.pupuk_id = m.id AND m.jenis = 'Pupuk'
-        WHERE p.id = ? LIMIT 1
-    ");
-
-    for ($i = 0; $i < $rowCount; $i++) {
-        $pId        = (int)($rawIds[$i] ?? 0);
-        $reqKarung  = parseKarungInt((string)($rawKarungs[$i] ?? ''));
-        $reqBerat   = parseBeratFloat((string)($rawBerats[$i] ?? ''));
-        $hargaStr   = formatRupiahStr($rawHargas[$i] ?? '');
-        $hargaFloat = parseRupiahFloat($hargaStr);
-
-        if ($pId <= 0 || $reqKarung <= 0 || $reqBerat <= 0 || $hargaFloat <= 0) {
-            if ($stokStmt) $stokStmt->close();
-            $itemNo = $i + 1;
-            return [
-                'error'              => "Item pupuk ke-{$itemNo}: Nama Pupuk, Jumlah Karung (> 0), Jumlah Berat (> 0), dan Harga Satuan (> 0) wajib diisi dengan benar.",
-                'items'              => [],
-                'total_karung'       => 0,
-                'total_berat'        => 0.0,
-                'total_hutang'       => 0.0,
-                'summary_nama_pupuk' => '',
-            ];
-        }
-
-        if (!isset($stokCache[$pId])) {
-            $stokRow = null;
-            if ($stokStmt) {
-                $stokStmt->bind_param("i", $pId);
-                $stokStmt->execute();
-                $stokRes = $stokStmt->get_result();
-                $stokRow = $stokRes ? $stokRes->fetch_assoc() : null;
-            }
-            if (!$stokRow) {
-                if ($stokStmt) $stokStmt->close();
-                $itemNo = $i + 1;
-                return [
-                    'error'              => "Item pupuk ke-{$itemNo}: Data pupuk tidak ditemukan pada tabel Stok Pupuk.",
-                    'items'              => [],
-                    'total_karung'       => 0,
-                    'total_berat'        => 0.0,
-                    'total_hutang'       => 0.0,
-                    'summary_nama_pupuk' => '',
-                ];
-            }
-            $stokCache[$pId] = $stokRow;
-        }
-
-        $stokRow = $stokCache[$pId];
-        $requestedBy[$pId] = [
-            'karung' => ($requestedBy[$pId]['karung'] ?? 0) + $reqKarung,
-            'berat'  => ($requestedBy[$pId]['berat'] ?? 0.0) + $reqBerat,
-        ];
-
-        $subtotalFloat = $reqKarung * $hargaFloat;
-        $items[] = [
-            'pengelolaan_pupuk_id' => $pId,
-            'pupuk_id'             => $stokRow['pupuk_id'] ? (int)$stokRow['pupuk_id'] : null,
-            'nama_pupuk'           => formatTitleCase($stokRow['nama_pupuk']),
-            'jumlah_karung'        => formatKarungStr($reqKarung),
-            'jumlah_berat'         => formatBeratStr($reqBerat),
-            'karung_num'           => $reqKarung,
-            'berat_num'            => $reqBerat,
-            'harga'                => $hargaStr,
-            'harga_num'            => $hargaFloat,
-            'subtotal'             => formatRupiahStr($subtotalFloat),
-            'subtotal_float'       => $subtotalFloat,
-        ];
-    }
-
-    if ($stokStmt) {
-        $stokStmt->close();
-    }
-
-    // Validasi kecukupan stok terakumulasi per jenis stok pupuk
-    foreach ($requestedBy as $pId => $req) {
-        $stokRow       = $stokCache[$pId];
-        $allowKarung   = (int)($oldStockAllowance[$pId]['karung'] ?? 0);
-        $allowBerat    = (float)($oldStockAllowance[$pId]['berat'] ?? 0.0);
-        $maksKarung    = parseKarungInt($stokRow['jumlah_karung']) + $allowKarung;
-        $maksBerat     = parseBeratFloat($stokRow['jumlah_berat']) + $allowBerat;
-        $namaPupukLbl  = formatTitleCase($stokRow['nama_pupuk']);
-
-        if ($req['karung'] > $maksKarung) {
-            return [
-                'error'              => "Stok karung untuk {$namaPupukLbl} tidak mencukupi! Maksimal tersedia: {$maksKarung} Karung, diminta: {$req['karung']} Karung.",
-                'items'              => [],
-                'total_karung'       => 0,
-                'total_berat'        => 0.0,
-                'total_hutang'       => 0.0,
-                'summary_nama_pupuk' => '',
-            ];
-        }
-        if ($req['berat'] > ($maksBerat + 0.01)) {
-            return [
-                'error'              => "Stok berat untuk {$namaPupukLbl} tidak mencukupi! Maksimal tersedia: " . formatBeratStr($maksBerat) . ", diminta: " . formatBeratStr($req['berat']) . ".",
-                'items'              => [],
-                'total_karung'       => 0,
-                'total_berat'        => 0.0,
-                'total_hutang'       => 0.0,
-                'summary_nama_pupuk' => '',
-            ];
-        }
-    }
-
-    $totalKarung = 0;
-    $totalBerat  = 0.0;
-    $totalHutang = 0.0;
-    $names       = [];
-    foreach ($items as $it) {
-        $totalKarung += $it['karung_num'];
-        $totalBerat  += $it['berat_num'];
-        $totalHutang += $it['subtotal_float'];
-        if (!in_array($it['nama_pupuk'], $names, true)) {
-            $names[] = $it['nama_pupuk'];
-        }
-    }
-
+    $res = parsePupukTransactionItems($conn, $post, $oldStockAllowance);
     return [
-        'error'              => null,
-        'items'              => $items,
-        'total_karung'       => $totalKarung,
-        'total_berat'        => $totalBerat,
-        'total_hutang'       => $totalHutang,
-        'summary_nama_pupuk' => mb_substr(implode(', ', $names), 0, 255, 'UTF-8'),
+        'error'              => $res['error'],
+        'items'              => $res['items'],
+        'total_karung'       => $res['total_karung'],
+        'total_berat'        => $res['total_berat'],
+        'total_hutang'       => $res['total_nominal'],
+        'summary_nama_pupuk' => $res['summary_nama_pupuk'],
     ];
 }
 
@@ -335,29 +179,7 @@ if ($action === 'add_hutang') {
                 $oldItems = [normalizeHutangItemRow($oldRow)];
             }
 
-            $oldAllowance = [];
-            foreach ($oldItems as $oi) {
-                $pId = !empty($oi['pengelolaan_pupuk_id']) ? (int)$oi['pengelolaan_pupuk_id'] : 0;
-                if ($pId <= 0 && !empty($oi['pupuk_id'])) {
-                    $qOldStok = $conn->prepare("SELECT id FROM pengelolaan_pupuk WHERE pupuk_id = ? ORDER BY id ASC LIMIT 1");
-                    if ($qOldStok) {
-                        $mId = (int)$oi['pupuk_id'];
-                        $qOldStok->bind_param("i", $mId);
-                        $qOldStok->execute();
-                        $rOldStok = $qOldStok->get_result();
-                        if ($rOldStok && ($rowOldStok = $rOldStok->fetch_assoc())) {
-                            $pId = (int)$rowOldStok['id'];
-                        }
-                        $qOldStok->close();
-                    }
-                }
-                if ($pId > 0) {
-                    $oldAllowance[$pId] = [
-                        'karung' => ($oldAllowance[$pId]['karung'] ?? 0) + (int)$oi['karung_num'],
-                        'berat'  => ($oldAllowance[$pId]['berat'] ?? 0.0) + (float)$oi['berat_num'],
-                    ];
-                }
-            }
+            $oldAllowance = buildStockAllowanceFromItems($conn, $oldItems);
 
             $parsed = parseHutangItemsPayload($conn, $_POST, $oldAllowance);
             if ($parsed['error'] !== null) {

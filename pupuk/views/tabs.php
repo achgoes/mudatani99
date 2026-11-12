@@ -5,6 +5,16 @@
         <span>Stok Pupuk</span>
         <span class="pupuk-tab-badge"><?= count($pupukList) ?></span>
     </a>
+    <a href="<?= appUrl('pupuk/?view=penjualan') ?>" class="pupuk-tab-btn <?= ($activeView === 'penjualan') ? 'active' : '' ?>">
+        <i class="fa-solid fa-cart-shopping"></i>
+        <span>Penjualan</span>
+        <span class="pupuk-tab-badge"><?= count($penjualanList) ?></span>
+    </a>
+    <a href="<?= appUrl('pupuk/?view=riwayat_penjualan') ?>" class="pupuk-tab-btn <?= ($activeView === 'riwayat_penjualan') ? 'active' : '' ?>">
+        <i class="fa-solid fa-receipt"></i>
+        <span>Riwayat Penjualan</span>
+        <span class="pupuk-tab-badge"><?= count($riwayatPenjualanList) ?></span>
+    </a>
     <a href="<?= appUrl('pupuk/?view=hutang') ?>" class="pupuk-tab-btn <?= ($activeView === 'hutang') ? 'active' : '' ?>">
         <i class="fa-solid fa-hand-holding-dollar"></i>
         <span>Hutang Piutang</span>

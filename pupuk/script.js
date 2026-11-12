@@ -165,8 +165,29 @@ function buildPupukOptionsHtml(selectedId = '') {
     return html;
 }
 
-function refreshHutangItemRowLabels(mode) {
-    const container = document.getElementById(`${mode}-hutang-items-container`);
+function getItemContextConfig(context) {
+    if (context === 'add-penjualan' || context === 'edit-penjualan') {
+        const mode = context.startsWith('edit') ? 'edit' : 'add';
+        return {
+            containerId: `${mode}-penjualan-items-container`,
+            totalInputId: `${mode}-penjualan-total`,
+            alertId: `${mode}-penjualan-alert`,
+            isHutang: false,
+            mode,
+        };
+    }
+    return {
+        containerId: `${context}-hutang-items-container`,
+        totalInputId: `${context}-hutang-jumlah`,
+        alertId: `${context}-hutang-alert`,
+        isHutang: true,
+        mode: context,
+    };
+}
+
+function refreshPupukItemRowLabels(context) {
+    const { containerId } = getItemContextConfig(context);
+    const container = document.getElementById(containerId);
     if (!container) return;
     const rows = container.querySelectorAll('.hutang-item-row');
     rows.forEach((row, idx) => {
@@ -200,12 +221,11 @@ function autoCalcBeratItemRow(row) {
     }
 }
 
-function recalcAllHutangTotals(mode) {
-    const container = document.getElementById(`${mode}-hutang-items-container`);
-    const jumlahInput = document.getElementById(`${mode}-hutang-jumlah`);
-    const sisaInput = document.getElementById(`${mode}-hutang-sisa`);
-    const statusSel = document.getElementById(`${mode}-hutang-status`);
-    if (!container || !jumlahInput) return;
+function recalcAllPupukTotals(context) {
+    const cfg = getItemContextConfig(context);
+    const container = document.getElementById(cfg.containerId);
+    const totalInput = document.getElementById(cfg.totalInputId);
+    if (!container || !totalInput) return;
 
     let grandTotal = 0;
     container.querySelectorAll('.hutang-item-row').forEach(row => {
@@ -224,19 +244,24 @@ function recalcAllHutangTotals(mode) {
     });
 
     const formattedTotal = formatRupiahNum(grandTotal);
-    jumlahInput.value = formattedTotal;
+    totalInput.value = formattedTotal;
 
-    if (sisaInput) {
-        if (statusSel && statusSel.value === 'Lunas') {
-            sisaInput.value = 'Rp 0';
-        } else if (mode === 'add' || sisaInput.dataset.syncWithTotal === '1' || sisaInput.value === '' || sisaInput.value === 'Rp 0') {
-            sisaInput.value = formattedTotal;
+    if (cfg.isHutang) {
+        const sisaInput = document.getElementById(`${cfg.mode}-hutang-sisa`);
+        const statusSel = document.getElementById(`${cfg.mode}-hutang-status`);
+        if (sisaInput) {
+            if (statusSel && statusSel.value === 'Lunas') {
+                sisaInput.value = 'Rp 0';
+            } else if (cfg.mode === 'add' || sisaInput.dataset.syncWithTotal === '1' || sisaInput.value === '' || sisaInput.value === 'Rp 0') {
+                sisaInput.value = formattedTotal;
+            }
         }
     }
 }
 
-function removeHutangItemRow(btn, mode) {
-    const container = document.getElementById(`${mode}-hutang-items-container`);
+function removePupukItemRow(btn, context) {
+    const { containerId } = getItemContextConfig(context);
+    const container = document.getElementById(containerId);
     if (!container) return;
     const rows = container.querySelectorAll('.hutang-item-row');
     if (rows.length <= 1) return;
@@ -244,13 +269,14 @@ function removeHutangItemRow(btn, mode) {
     const row = btn.closest('.hutang-item-row');
     if (row) {
         row.remove();
-        refreshHutangItemRowLabels(mode);
-        recalcAllHutangTotals(mode);
+        refreshPupukItemRowLabels(context);
+        recalcAllPupukTotals(context);
     }
 }
 
-function addHutangItemRow(mode, itemData = null) {
-    const container = document.getElementById(`${mode}-hutang-items-container`);
+function addPupukItemRow(context, itemData = null) {
+    const cfg = getItemContextConfig(context);
+    const container = document.getElementById(cfg.containerId);
     if (!container) return;
 
     const row = document.createElement('div');
@@ -306,7 +332,7 @@ function addHutangItemRow(mode, itemData = null) {
     const clearRowError = (el) => {
         el.classList.remove('input-error');
         const form = container.closest('form');
-        const alertBox = document.getElementById(`${mode}-hutang-alert`);
+        const alertBox = document.getElementById(cfg.alertId);
         if (form && alertBox && !form.querySelector('.modal-input.input-error')) {
             alertBox.classList.add('hidden');
         }
@@ -316,14 +342,14 @@ function addHutangItemRow(mode, itemData = null) {
         selEl.addEventListener('change', () => {
             clearRowError(selEl);
             autoCalcBeratItemRow(row);
-            recalcAllHutangTotals(mode);
+            recalcAllPupukTotals(context);
         });
     }
     if (karungEl) {
         karungEl.addEventListener('input', () => {
             clearRowError(karungEl);
             autoCalcBeratItemRow(row);
-            recalcAllHutangTotals(mode);
+            recalcAllPupukTotals(context);
         });
     }
     if (beratEl) {
@@ -333,15 +359,19 @@ function addHutangItemRow(mode, itemData = null) {
         hargaEl.addEventListener('input', () => {
             clearRowError(hargaEl);
             formatInputRupiah(hargaEl);
-            recalcAllHutangTotals(mode);
+            recalcAllPupukTotals(context);
         });
     }
     if (removeBtn) {
-        removeBtn.addEventListener('click', () => removeHutangItemRow(removeBtn, mode));
+        removeBtn.addEventListener('click', () => removePupukItemRow(removeBtn, context));
     }
 
-    refreshHutangItemRowLabels(mode);
-    recalcAllHutangTotals(mode);
+    refreshPupukItemRowLabels(context);
+    recalcAllPupukTotals(context);
+}
+
+function addHutangItemRow(mode, itemData = null) {
+    addPupukItemRow(mode, itemData);
 }
 
 function openModalTambahHutang() {
@@ -599,65 +629,41 @@ function filterPupukTable() {
     });
 }
 
-let activeHutangDateFrom = '';
-let activeHutangDateTo   = '';
-
-function applyHutangDateFilter() {
-    const fromEl = document.getElementById('hutang-date-from');
-    const toEl   = document.getElementById('hutang-date-to');
-    let fromVal  = (fromEl?.value || '').trim();
-    let toVal    = (toEl?.value || '').trim();
-
-    if (fromVal && toVal && fromVal > toVal) {
-        const tmp = fromVal;
-        fromVal = toVal;
-        toVal   = tmp;
-        if (fromEl) fromEl.value = fromVal;
-        if (toEl) toEl.value = toVal;
-    }
-
-    activeHutangDateFrom = fromVal;
-    activeHutangDateTo   = toVal;
-    filterHutangTable();
-}
-
-function filterHutangTable() {
-    const query        = (document.getElementById('hutang-search-input')?.value || '').toLowerCase();
-    const statusFilter = document.getElementById('hutang-status-filter')?.value || 'ALL';
-    const rows         = document.querySelectorAll('.hutang-row-item');
+function applyDateRangeAndFilter(prefix, rowSelector, filterSelectId, tbodyId, emptyRowId, emptyText) {
+    const query = (document.getElementById(`${prefix}-search-input`)?.value || '').toLowerCase();
+    const selectVal = document.getElementById(filterSelectId)?.value || 'ALL';
+    const fromVal = (document.getElementById(`${prefix}-date-from`)?.value || '').trim();
+    const toVal = (document.getElementById(`${prefix}-date-to`)?.value || '').trim();
+    const rows = document.querySelectorAll(rowSelector);
 
     let visibleCount = 0;
     rows.forEach(row => {
-        const text        = row.innerText.toLowerCase();
-        const rowStatus   = row.getAttribute('data-status') || '';
-        const rowDate     = row.getAttribute('data-tanggal') || '';
-        const matchQuery  = text.includes(query);
-        const matchStatus = (statusFilter === 'ALL' || rowStatus === statusFilter);
+        const text = row.innerText.toLowerCase();
+        const rowAttr = row.getAttribute('data-status') || row.getAttribute('data-metode') || '';
+        const rowDate = row.getAttribute('data-tanggal') || '';
+        const matchQuery = text.includes(query);
+        const matchFilter = (selectVal === 'ALL' || rowAttr === selectVal);
 
         let matchDate = true;
-        if (activeHutangDateFrom) {
-            matchDate = matchDate && (rowDate !== '' && rowDate >= activeHutangDateFrom);
-        }
-        if (activeHutangDateTo) {
-            matchDate = matchDate && (rowDate !== '' && rowDate <= activeHutangDateTo);
-        }
+        if (fromVal) matchDate = matchDate && (rowDate !== '' && rowDate >= fromVal);
+        if (toVal) matchDate = matchDate && (rowDate !== '' && rowDate <= toVal);
 
-        const isShow      = matchQuery && matchStatus && matchDate;
+        const isShow = matchQuery && matchFilter && matchDate;
         row.style.display = isShow ? '' : 'none';
         if (isShow) visibleCount++;
     });
 
-    let emptyRow = document.getElementById('table-hutang-empty-filter');
+    let emptyRow = document.getElementById(emptyRowId);
     if (visibleCount === 0 && rows.length > 0) {
         if (!emptyRow) {
-            const tbodyEl = document.getElementById('table-hutang-tbody');
-            const colCount = tbodyEl?.closest('table')?.querySelectorAll('thead th').length || 12;
+            const tbodyEl = document.getElementById(tbodyId);
+            const colCount = tbodyEl?.closest('table')?.querySelectorAll('thead th').length || 11;
             emptyRow = document.createElement('tr');
-            emptyRow.id = 'table-hutang-empty-filter';
+            emptyRow.id = emptyRowId;
             emptyRow.innerHTML = `
                 <td colspan="${colCount}" class="table-empty-cell py-6 text-center text-slate-500">
                     <i class="fa-solid fa-magnifying-glass text-2xl mb-2 text-slate-400 block"></i>
-                    Tidak ada data hutang / pelunasan pupuk yang sesuai dengan pencarian atau filter yang dipilih.
+                    ${emptyText}
                 </td>
             `;
             tbodyEl?.appendChild(emptyRow);
@@ -666,6 +672,289 @@ function filterHutangTable() {
     } else if (emptyRow) {
         emptyRow.style.display = 'none';
     }
+}
+
+function normalizeDateInputsOrder(fromId, toId) {
+    const fromEl = document.getElementById(fromId);
+    const toEl = document.getElementById(toId);
+    const fromVal = (fromEl?.value || '').trim();
+    const toVal = (toEl?.value || '').trim();
+    if (fromVal && toVal && fromVal > toVal) {
+        if (fromEl) fromEl.value = toVal;
+        if (toEl) toEl.value = fromVal;
+    }
+}
+
+function applyHutangDateFilter() {
+    normalizeDateInputsOrder('hutang-date-from', 'hutang-date-to');
+    filterHutangTable();
+}
+
+function filterHutangTable() {
+    applyDateRangeAndFilter(
+        'hutang',
+        '.hutang-row-item',
+        'hutang-status-filter',
+        'table-hutang-tbody',
+        'table-hutang-empty-filter',
+        'Tidak ada data hutang / pelunasan pupuk yang sesuai dengan pencarian atau filter yang dipilih.'
+    );
+}
+
+function applyPenjualanDateFilter() {
+    normalizeDateInputsOrder('penjualan-date-from', 'penjualan-date-to');
+    filterPenjualanTable();
+}
+
+function filterPenjualanTable() {
+    applyDateRangeAndFilter(
+        'penjualan',
+        '.penjualan-row-item',
+        'penjualan-metode-filter',
+        'table-penjualan-tbody',
+        'table-penjualan-empty-filter',
+        'Tidak ada data atau riwayat penjualan pupuk yang sesuai dengan pencarian atau filter yang dipilih.'
+    );
+}
+
+function togglePenjualanAlamatField(mode) {
+    const sel = document.getElementById(`${mode}-penjualan-anggota`);
+    const wrap = document.getElementById(`${mode}-penjualan-alamat-wrap`);
+    if (!sel || !wrap) return;
+    const isNonAnggota = (sel.value || '').trim() === '';
+    wrap.classList.toggle('hidden', !isNonAnggota);
+}
+
+function onPenjualanAnggotaChange(mode) {
+    const sel = document.getElementById(`${mode}-penjualan-anggota`);
+    const inp = document.getElementById(`${mode}-penjualan-pembeli`);
+    const alamatInp = document.getElementById(`${mode}-penjualan-alamat`);
+    if (!sel || !inp) return;
+    const opt = sel.options[sel.selectedIndex];
+    const nama = opt ? (opt.getAttribute('data-nama') || '').trim() : '';
+    const alamat = opt ? (opt.getAttribute('data-alamat') || '').trim() : '';
+    if (nama !== '') {
+        inp.value = nama;
+        inp.classList.remove('input-error');
+        if (alamatInp) {
+            alamatInp.value = alamat;
+            alamatInp.dataset.fromAnggota = '1';
+        }
+    } else if (alamatInp && alamatInp.dataset.fromAnggota === '1') {
+        alamatInp.value = '';
+        alamatInp.dataset.fromAnggota = '0';
+    }
+    togglePenjualanAlamatField(mode);
+}
+
+function openModalTambahPenjualan() {
+    const modal = document.getElementById('modalTambahPenjualan');
+    if (!modal) return;
+    const form = modal.querySelector('form');
+    if (form) {
+        form.reset();
+        form.querySelectorAll('.modal-input').forEach(el => el.classList.remove('input-error'));
+    }
+    const alertBox = document.getElementById('add-penjualan-alert');
+    if (alertBox) alertBox.classList.add('hidden');
+
+    const container = document.getElementById('add-penjualan-items-container');
+    if (container) container.innerHTML = '';
+    addPupukItemRow('add-penjualan');
+
+    const tglInput = document.getElementById('add-penjualan-tanggal');
+    if (tglInput) tglInput.value = new Date().toISOString().split('T')[0];
+    const totalInput = document.getElementById('add-penjualan-total');
+    if (totalInput) totalInput.value = 'Rp 0';
+    togglePenjualanAlamatField('add');
+
+    modal.classList.add('show');
+    setTimeout(() => {
+        const pembeliInput = document.getElementById('add-penjualan-pembeli');
+        if (pembeliInput) pembeliInput.focus();
+    }, 150);
+}
+
+function openModalEditPenjualan(data) {
+    if (!data) return;
+    const modal = document.getElementById('modalEditPenjualan');
+    if (modal) {
+        const form = modal.querySelector('form');
+        if (form) {
+            form.querySelectorAll('.modal-input').forEach(el => el.classList.remove('input-error'));
+        }
+        const alertBox = document.getElementById('edit-penjualan-alert');
+        if (alertBox) alertBox.classList.add('hidden');
+    }
+
+    document.getElementById('edit-penjualan-id').value = data.id;
+    document.getElementById('edit-penjualan-anggota').value = data.anggota_id || '';
+    document.getElementById('edit-penjualan-pembeli').value = data.nama_pembeli || '';
+    const editAlamatEl = document.getElementById('edit-penjualan-alamat');
+    if (editAlamatEl) {
+        editAlamatEl.value = (data.alamat_pembeli && data.alamat_pembeli !== '-') ? data.alamat_pembeli : '';
+    }
+    togglePenjualanAlamatField('edit');
+    document.getElementById('edit-penjualan-metode').value = data.metode_bayar || 'Tunai';
+    document.getElementById('edit-penjualan-tanggal').value = (data.tanggal_jual && data.tanggal_jual.length >= 10 && data.tanggal_jual !== '0000-00-00')
+        ? data.tanggal_jual.substring(0, 10)
+        : new Date().toISOString().split('T')[0];
+    document.getElementById('edit-penjualan-keterangan').value = data.keterangan || '';
+
+    const container = document.getElementById('edit-penjualan-items-container');
+    if (container) {
+        container.innerHTML = '';
+        const items = (Array.isArray(data.items) && data.items.length > 0) ? data.items : [{}];
+        items.forEach(item => addPupukItemRow('edit-penjualan', item));
+    }
+
+    if (modal) modal.classList.add('show');
+}
+
+function openModalDeletePenjualan(id, kode, pembeli, karung) {
+    document.getElementById('delete-penjualan-id').value = id;
+    document.getElementById('delete-penjualan-kode').innerText = kode;
+    document.getElementById('delete-penjualan-pembeli').innerText = pembeli;
+    document.getElementById('delete-penjualan-karung').innerText = karung;
+
+    const modal = document.getElementById('modalDeletePenjualan');
+    if (modal) modal.classList.add('show');
+}
+
+function openModalInfoPenjualan(penjualanId) {
+    if (typeof PENJUALAN_INFO_MAP === 'undefined') return;
+    const j = PENJUALAN_INFO_MAP[penjualanId];
+    if (!j) return;
+
+    const namaPembeli = j.nama_pembeli || '-';
+    const nParts = namaPembeli.trim().split(/\s+/);
+    const initials = (nParts.length >= 2)
+        ? (nParts[0].charAt(0) + nParts[1].charAt(0)).toUpperCase()
+        : namaPembeli.substring(0, 2).toUpperCase();
+
+    document.getElementById('info-penjualan-avatar').innerText = initials;
+    document.getElementById('info-penjualan-nama-pembeli').innerText = namaPembeli;
+    const subEl = document.getElementById('info-penjualan-sub-pembeli');
+    if (subEl) {
+        subEl.innerText = `Alamat: ${j.alamat_pembeli || '-'}`;
+    }
+
+    const kodeWrap = document.getElementById('info-penjualan-kode-wrap');
+    if (kodeWrap) {
+        kodeWrap.innerHTML = `<span class="badge-kode-transaksi">${escapeHtmlStr(j.kode_transaksi || '-')}</span>`;
+    }
+
+    document.getElementById('info-penjualan-tgl').innerText = formatDateID(j.tanggal_jual || j.created_at);
+    document.getElementById('info-penjualan-metode').innerText = j.metode_bayar || 'Tunai';
+    document.getElementById('info-penjualan-petugas').innerText = j.dicatat_oleh || '-';
+    document.getElementById('info-penjualan-kuantitas').innerText = j.jumlah_karung || '0 Karung';
+    document.getElementById('info-penjualan-berat').innerText = j.jumlah_berat || '0 Kg';
+    document.getElementById('info-penjualan-total').innerText = j.total_harga_str || 'Rp 0';
+    document.getElementById('info-penjualan-keterangan').innerText = j.keterangan || '-';
+
+    const itemsList = Array.isArray(j.items) ? j.items : [];
+    const badgeEl = document.getElementById('info-penjualan-items-badge');
+    if (badgeEl) badgeEl.innerText = `${itemsList.length} Item`;
+
+    const tbody = document.getElementById('info-penjualan-items-tbody');
+    if (tbody) {
+        if (itemsList.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="info-riwayat-empty">Tidak ada rincian item pupuk.</td></tr>';
+        } else {
+            tbody.innerHTML = itemsList.map((it, idx) => `
+                <tr>
+                    <td class="font-semibold text-slate-500">${idx + 1}</td>
+                    <td><span class="badge-nama-pupuk"><i class="fa-solid fa-flask-vial"></i> ${escapeHtmlStr(it.nama_pupuk || '-')}</span></td>
+                    <td><span class="badge-karung-pupuk">${escapeHtmlStr(it.jumlah_karung || '0 Karung')}</span></td>
+                    <td><span class="nik-badge">${escapeHtmlStr(it.jumlah_berat || '0 Kg')}</span></td>
+                    <td class="font-semibold text-emerald-700">${escapeHtmlStr(it.harga || 'Rp 0')}</td>
+                    <td class="font-bold text-blue-800">${escapeHtmlStr(it.subtotal || 'Rp 0')}</td>
+                </tr>
+            `).join('');
+        }
+    }
+
+    const printBtn = document.getElementById('btn-info-print-penjualan');
+    if (printBtn) {
+        const basePrintUrl = (typeof PUPUK_PRINT_JUAL_URL !== 'undefined') ? PUPUK_PRINT_JUAL_URL : 'print-penjualan.php';
+        printBtn.href = `${basePrintUrl}?id=${encodeURIComponent(penjualanId)}`;
+    }
+
+    const modal = document.getElementById('modalInfoPenjualan');
+    if (modal) modal.classList.add('show');
+}
+
+function validatePenjualanForm(formId, mode = 'add') {
+    const form = document.getElementById(formId);
+    if (!form) return true;
+
+    const alertBox = document.getElementById(`${mode}-penjualan-alert`);
+    const alertText = document.getElementById(`${mode}-penjualan-alert-text`);
+
+    form.querySelectorAll('.modal-input').forEach(el => el.classList.remove('input-error'));
+    if (alertBox) alertBox.classList.add('hidden');
+
+    const missingFields = [];
+    let firstInvalidEl = null;
+
+    function checkEl(el, label, checkMode = false) {
+        if (!el) return;
+        const val = el.value.trim();
+        let isInvalid = false;
+        if (val === '') {
+            isInvalid = true;
+        } else if (checkMode === 'rupiah') {
+            if (parseRupiahNum(val) <= 0) isInvalid = true;
+        } else if (checkMode) {
+            if (parseFirstNum(val) <= 0) isInvalid = true;
+        }
+        if (isInvalid) {
+            el.classList.add('input-error');
+            missingFields.push(label);
+            if (!firstInvalidEl) firstInvalidEl = el;
+        }
+    }
+
+    checkEl(document.getElementById(`${mode}-penjualan-pembeli`), 'Nama Pembeli');
+
+    const rows = form.querySelectorAll(`#${mode}-penjualan-items-container .hutang-item-row`);
+    if (rows.length === 0) {
+        missingFields.push('Minimal 1 Item Pupuk');
+    } else {
+        rows.forEach((row, idx) => {
+            const no = idx + 1;
+            checkEl(row.querySelector('.hutang-item-pupuk'), `Item #${no} Nama Pupuk`);
+            checkEl(row.querySelector('.hutang-item-karung'), `Item #${no} Jumlah Karung (> 0)`, true);
+            checkEl(row.querySelector('.hutang-item-berat'), `Item #${no} Jumlah Berat (> 0)`, true);
+            checkEl(row.querySelector('.hutang-item-harga'), `Item #${no} Harga Per Item (> 0)`, 'rupiah');
+        });
+    }
+
+    checkEl(document.getElementById(`${mode}-penjualan-total`), 'Total Penjualan (> 0)', 'rupiah');
+    checkEl(document.getElementById(`${mode}-penjualan-metode`), 'Metode Pembayaran');
+    checkEl(document.getElementById(`${mode}-penjualan-tanggal`), 'Tanggal Penjualan');
+
+    if (missingFields.length > 0) {
+        if (alertBox && alertText) {
+            alertText.innerHTML = `<strong>Peringatan!</strong> Kolom berikut belum diisi dengan benar: <span class="font-semibold text-rose-900 underline">${escapeHtmlStr(missingFields.join(', '))}</span>. Harap lengkapi sebelum menyimpan.`;
+            alertBox.classList.remove('hidden');
+        }
+        showToast(
+            'Kolom Belum Lengkap!',
+            `Terdapat ${missingFields.length} kolom wajib yang belum diisi dengan benar.`,
+            'danger',
+            3200
+        );
+        if (firstInvalidEl) {
+            firstInvalidEl.focus();
+            if (typeof firstInvalidEl.scrollIntoView === 'function') {
+                firstInvalidEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+        return false;
+    }
+
+    return true;
 }
 
 function escapeHtmlStr(str) {
@@ -925,6 +1214,32 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Inisialisasi validasi interaktif & notifikasi untuk Tambah dan Edit Penjualan Pupuk
+    ['add', 'edit'].forEach(mode => {
+        const formId = mode === 'add' ? 'formTambahPenjualan' : 'formEditPenjualan';
+        const form = document.getElementById(formId);
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                if (!validatePenjualanForm(formId, mode)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+            });
+
+            form.querySelectorAll('.modal-input').forEach(input => {
+                const clearErr = () => {
+                    input.classList.remove('input-error');
+                    const alertBox = document.getElementById(`${mode}-penjualan-alert`);
+                    if (alertBox && !form.querySelector('.modal-input.input-error')) {
+                        alertBox.classList.add('hidden');
+                    }
+                };
+                input.addEventListener('input', clearErr);
+                input.addEventListener('change', clearErr);
+            });
+        }
+    });
+
     const editSisaEl = document.getElementById('edit-hutang-sisa');
     if (editSisaEl) {
         editSisaEl.addEventListener('input', () => {
@@ -936,14 +1251,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const dateToEl   = document.getElementById('hutang-date-to');
     if (dateFromEl && dateToEl) {
         const checkClearDateFilter = () => {
-            if (!dateFromEl.value && !dateToEl.value && (activeHutangDateFrom || activeHutangDateTo)) {
-                activeHutangDateFrom = '';
-                activeHutangDateTo   = '';
+            if (!dateFromEl.value && !dateToEl.value) {
                 filterHutangTable();
             }
         };
         dateFromEl.addEventListener('change', checkClearDateFilter);
         dateToEl.addEventListener('change', checkClearDateFilter);
+    }
+
+    const pDateFromEl = document.getElementById('penjualan-date-from');
+    const pDateToEl   = document.getElementById('penjualan-date-to');
+    if (pDateFromEl && pDateToEl) {
+        const checkClearPenjualanDate = () => {
+            if (!pDateFromEl.value && !pDateToEl.value) {
+                filterPenjualanTable();
+            }
+        };
+        pDateFromEl.addEventListener('change', checkClearPenjualanDate);
+        pDateToEl.addEventListener('change', checkClearPenjualanDate);
     }
 
     // Tampilkan toast notifikasi dari konfigurasi PHP (views/toast-config.php)

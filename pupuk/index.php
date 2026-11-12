@@ -16,7 +16,15 @@ require_once __DIR__ . '/actions.php';
 require_once __DIR__ . '/data.php';
 
 // Konfigurasi judul halaman
-if ($activeView === 'hutang') {
+if ($activeView === 'penjualan') {
+    $pageTitle           = "Penjualan Pupuk | mudatani99 - Sistem Pengelolaan Kelompok Pertanian";
+    $currentMenuTitle    = "Penjualan Pupuk";
+    $currentMenuSubtitle = "Pencatatan transaksi penjualan langsung pupuk (tunai/transfer) yang otomatis mengurangi Stok Pupuk.";
+} elseif ($activeView === 'riwayat_penjualan') {
+    $pageTitle           = "Riwayat Penjualan Pupuk | mudatani99 - Sistem Pengelolaan Kelompok Pertanian";
+    $currentMenuTitle    = "Riwayat Penjualan Pupuk";
+    $currentMenuSubtitle = "Jejak aktivitas penjualan pupuk: transaksi baru, pembaruan item, maupun pembatalan.";
+} elseif ($activeView === 'hutang') {
     $pageTitle           = "Hutang Piutang Pupuk | mudatani99 - Sistem Pengelolaan Kelompok Pertanian";
     $currentMenuTitle    = "Hutang Piutang Pupuk";
     $currentMenuSubtitle = "Pencatatan hutang piutang pupuk anggota petani yang tersinkronisasi otomatis dengan Stok Pupuk.";
@@ -27,7 +35,7 @@ if ($activeView === 'hutang') {
 } else {
     $pageTitle           = "Stok Pupuk | mudatani99 - Sistem Pengelolaan Kelompok Pertanian";
     $currentMenuTitle    = "Stok Pupuk";
-    $currentMenuSubtitle = "Manajemen inventaris stok pupuk kelompok tani yang tersinkronisasi otomatis dengan transaksi Hutang Piutang.";
+    $currentMenuSubtitle = "Manajemen inventaris stok pupuk kelompok tani yang tersinkronisasi otomatis dengan transaksi Penjualan & Hutang Piutang.";
 }
 $extraCss = ['css/data-page.css', 'pupuk/style.css'];
 $extraJs  = ['pupuk/script.js'];
@@ -46,6 +54,10 @@ require_once ROOT_PATH . '/layouts/sidebar.php';
 
             <?php if ($activeView === 'kelola'): ?>
                 <?php require __DIR__ . '/views/view-stok.php'; ?>
+            <?php elseif ($activeView === 'penjualan'): ?>
+                <?php require __DIR__ . '/views/view-penjualan.php'; ?>
+            <?php elseif ($activeView === 'riwayat_penjualan'): ?>
+                <?php require __DIR__ . '/views/view-riwayat-penjualan.php'; ?>
             <?php elseif ($activeView === 'riwayat'): ?>
                 <?php require __DIR__ . '/views/view-riwayat.php'; ?>
             <?php else: ?>
@@ -57,10 +69,11 @@ require_once ROOT_PATH . '/layouts/sidebar.php';
 </div>
 
 <!-- ========================================================
-     MODAL COMPONENTS (STOK, HUTANG, BAYAR & INFO)
+     MODAL COMPONENTS (STOK, PENJUALAN, HUTANG, BAYAR & INFO)
 ======================================================== -->
 <?php
 require __DIR__ . '/views/modals-stok.php';
+require __DIR__ . '/views/modals-penjualan.php';
 require __DIR__ . '/views/modals-hutang.php';
 require __DIR__ . '/views/modals-bayar.php';
 require __DIR__ . '/views/modal-info.php';

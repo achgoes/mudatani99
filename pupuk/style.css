@@ -698,6 +698,32 @@
   color: #0f766e;
 }
 
+.badge-kode-transaksi {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 0.4rem;
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+  font-size: 0.73rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.badge-pembeli-tipe {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.69rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.badge-aksi-diperbarui {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
 .link-riwayat-ke-hutang {
   color: #15803d;
   font-weight: 700;

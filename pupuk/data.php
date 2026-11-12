@@ -18,6 +18,8 @@ if (isset($_GET['status'])) {
         $toastTitle = "Berhasil Ditambahkan!";
         if ($activeView === 'kelola') {
             $toastMessage = "Data stok pupuk baru <b>$pName</b> berhasil disimpan.";
+        } elseif ($activeView === 'penjualan' || $activeView === 'riwayat_penjualan') {
+            $toastMessage = "Transaksi penjualan pupuk untuk <b>$pName</b> disimpan &amp; Stok Pupuk otomatis dikurangi.";
         } else {
             $toastMessage = "Data hutang pupuk petani <b>$pName</b> disimpan & data Stok Pupuk otomatis dikurangi.";
         }
@@ -36,6 +38,8 @@ if (isset($_GET['status'])) {
         $toastTitle = "Berhasil Diperbarui!";
         if ($activeView === 'kelola') {
             $toastMessage = "Data stok pupuk <b>$pName</b> berhasil diperbarui.";
+        } elseif ($activeView === 'penjualan' || $activeView === 'riwayat_penjualan') {
+            $toastMessage = "Transaksi penjualan pupuk untuk <b>$pName</b> diperbarui &amp; Stok Pupuk otomatis disinkronkan.";
         } else {
             $toastMessage = "Data hutang pupuk petani <b>$pName</b> diperbarui & data Stok Pupuk otomatis disinkronkan.";
         }
@@ -44,6 +48,9 @@ if (isset($_GET['status'])) {
         $toastTitle = "Berhasil Dihapus!";
         if ($activeView === 'kelola') {
             $toastMessage = "Data stok pupuk berhasil dihapus.";
+        } elseif ($activeView === 'penjualan' || $activeView === 'riwayat_penjualan') {
+            $extraInfo = $rKarung !== '' ? " Stok <b>$rKarung</b> telah dikembalikan ke Stok Pupuk." : "";
+            $toastMessage = "Transaksi penjualan pupuk berhasil dihapus." . $extraInfo;
         } else {
             $extraInfo = $rKarung !== '' ? " Stok <b>$rKarung</b> telah dikembalikan ke Stok Pupuk." : "";
             $toastMessage = "Data hutang piutang berhasil dihapus." . $extraInfo;
@@ -282,4 +289,116 @@ foreach ($hutangList as $hRow) {
         $totalSisaPiutang += parseRupiahFloat($hRow['sisa_hutang']);
     }
     $hutangInfoMap[(int)$hRow['id']] = $hRow;
+}
+
+// 6. Daftar Penjualan Pupuk (Berdiri sendiri, terpisah dari Hutang Piutang)
+$penjualanItemsGrouped     = getAllPenjualanItemsGrouped($conn);
+$penjualanList             = [];
+$penjualanInfoMap          = [];
+$totalPendapatanPenjualan  = 0;
+$totalKarungPenjualan      = 0;
+$totalBeratPenjualan       = 0.0;
+$penjualanBulanIniCount    = 0;
+$penjualanBulanIniNominal  = 0;
+$currentYearMonth          = date('Y-m');
+
+$resPenjualan = $conn->query("
+    SELECT j.id, j.kode_transaksi, j.anggota_id,
+           COALESCE(a.nama_petani, j.nama_pembeli) AS nama_pembeli,
+           COALESCE(NULLIF(a.alamat, ''), NULLIF(j.alamat_pembeli, ''), '-') AS alamat_pembeli,
+           j.nama_pupuk, j.jumlah_karung, j.jumlah_berat,
+           j.total_harga, j.metode_bayar, j.tanggal_jual,
+           j.keterangan, j.dicatat_oleh, j.created_at
+    FROM penjualan_pupuk j
+    LEFT JOIN anggota_petani a ON j.anggota_id = a.id
+    ORDER BY j.tanggal_jual DESC, j.id DESC
+");
+if ($resPenjualan) {
+    while ($row = $resPenjualan->fetch_assoc()) {
+        $pid = (int)$row['id'];
+        $row['nama_pembeli']   = formatTitleCase($row['nama_pembeli']);
+        $row['alamat_pembeli'] = formatTitleCase($row['alamat_pembeli'] ?: '-');
+        $row['dicatat_oleh']   = formatTitleCase($row['dicatat_oleh'] ?: '-');
+        $row['keterangan']     = formatTitleCase($row['keterangan'] ?: '-');
+
+        $rowItems = $penjualanItemsGrouped[$pid] ?? [];
+        $itemNames = [];
+        $kNum      = 0;
+        $bNum      = 0.0;
+        $sumSub    = 0;
+        foreach ($rowItems as $it) {
+            if (!in_array($it['nama_pupuk'], $itemNames, true)) {
+                $itemNames[] = $it['nama_pupuk'];
+            }
+            $kNum   += (int)$it['karung_num'];
+            $bNum   += (float)$it['berat_num'];
+            $sumSub += (int)$it['subtotal_num'];
+        }
+
+        if (!empty($rowItems)) {
+            $row['nama_pupuk']    = implode(', ', $itemNames);
+            $row['jumlah_karung'] = formatKarungStr($kNum);
+            $row['jumlah_berat']  = formatBeratStr($bNum);
+        } else {
+            $kNum = parseKarungInt($row['jumlah_karung']);
+            $bNum = parseBeratFloat($row['jumlah_berat']);
+            $row['nama_pupuk']    = formatTitleCase($row['nama_pupuk']);
+            $row['jumlah_karung'] = formatKarungStr($kNum);
+            $row['jumlah_berat']  = formatBeratStr($bNum);
+        }
+
+        $totalInt = (int)$row['total_harga'] > 0 ? (int)$row['total_harga'] : $sumSub;
+        $row['items']           = $rowItems;
+        $row['karung_num']      = $kNum;
+        $row['berat_num']       = $bNum;
+        $row['total_harga_num'] = $totalInt;
+        $row['total_harga_str'] = formatRupiahStr($totalInt);
+        $row['tanggal_jual']    = !empty($row['tanggal_jual']) ? $row['tanggal_jual'] : substr((string)$row['created_at'], 0, 10);
+
+        $penjualanList[] = $row;
+        $penjualanInfoMap[$pid] = $row;
+
+        $totalPendapatanPenjualan += $totalInt;
+        $totalKarungPenjualan     += $kNum;
+        $totalBeratPenjualan      += $bNum;
+        if (strpos((string)$row['tanggal_jual'], $currentYearMonth) === 0) {
+            $penjualanBulanIniCount++;
+            $penjualanBulanIniNominal += $totalInt;
+        }
+    }
+}
+
+// 7. Riwayat Penjualan Pupuk (Log aktivitas Terjual / Diperbarui / Dibatalkan)
+$riwayatPenjualanList = [];
+$countLogTerjual      = 0;
+$countLogDiperbarui   = 0;
+$countLogDibatalkan   = 0;
+
+$resRiwayatJual = $conn->query("
+    SELECT r.id, r.penjualan_id, r.kode_transaksi, r.aksi,
+           r.nama_pembeli, r.rincian_item, r.total_karung, r.total_berat,
+           r.total_harga, r.metode_bayar, r.tanggal_jual,
+           r.dicatat_oleh, r.keterangan, r.created_at
+    FROM riwayat_penjualan_pupuk r
+    ORDER BY r.id DESC
+");
+if ($resRiwayatJual) {
+    while ($row = $resRiwayatJual->fetch_assoc()) {
+        $row['nama_pembeli']    = formatTitleCase($row['nama_pembeli']);
+        $row['dicatat_oleh']    = formatTitleCase($row['dicatat_oleh'] ?: '-');
+        $row['keterangan']      = formatTitleCase($row['keterangan'] ?: '-');
+        $row['total_harga_num'] = (int)$row['total_harga'];
+        $row['total_harga_str'] = formatRupiahStr((int)$row['total_harga']);
+        $row['tanggal_jual']    = !empty($row['tanggal_jual']) ? $row['tanggal_jual'] : substr((string)$row['created_at'], 0, 10);
+
+        $riwayatPenjualanList[] = $row;
+
+        if ($row['aksi'] === 'Terjual') {
+            $countLogTerjual++;
+        } elseif ($row['aksi'] === 'Diperbarui') {
+            $countLogDiperbarui++;
+        } elseif ($row['aksi'] === 'Dibatalkan') {
+            $countLogDibatalkan++;
+        }
+    }
 }

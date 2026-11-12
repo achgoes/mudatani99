@@ -202,6 +202,80 @@ foreach (['hutang_pupuk', 'riwayat_hutang_pupuk', 'pembayaran_hutang_pupuk'] as 
     }
 }
 
+// 8. Pastikan tabel penjualan_pupuk tersedia (berdiri sendiri, terpisah dari hutang piutang)
+$conn->query("CREATE TABLE IF NOT EXISTS `penjualan_pupuk` (
+    `id` INT(11) NOT NULL AUTO_INCREMENT,
+    `kode_transaksi` VARCHAR(30) NOT NULL,
+    `anggota_id` INT(11) DEFAULT NULL,
+    `nama_pembeli` VARCHAR(100) NOT NULL,
+    `alamat_pembeli` VARCHAR(255) DEFAULT '-',
+    `nama_pupuk` VARCHAR(255) NOT NULL,
+    `jumlah_karung` VARCHAR(50) NOT NULL,
+    `jumlah_berat` VARCHAR(50) NOT NULL,
+    `total_harga` BIGINT NOT NULL DEFAULT 0,
+    `metode_bayar` ENUM('Tunai', 'Transfer', 'QRIS') NOT NULL DEFAULT 'Tunai',
+    `tanggal_jual` DATE NOT NULL,
+    `keterangan` VARCHAR(255) DEFAULT '-',
+    `dicatat_oleh` VARCHAR(100) DEFAULT '-',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uniq_kode_penjualan` (`kode_transaksi`),
+    KEY `idx_penjualan_anggota` (`anggota_id`),
+    KEY `idx_penjualan_tanggal` (`tanggal_jual`),
+    CONSTRAINT `fk_penjualan_anggota` FOREIGN KEY (`anggota_id`) REFERENCES `anggota_petani` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+// 9. Pastikan tabel penjualan_pupuk_items tersedia (detail item pupuk terjual)
+$conn->query("CREATE TABLE IF NOT EXISTS `penjualan_pupuk_items` (
+    `id` INT(11) NOT NULL AUTO_INCREMENT,
+    `penjualan_id` INT(11) NOT NULL,
+    `pengelolaan_pupuk_id` INT(11) DEFAULT NULL,
+    `pupuk_id` INT(11) DEFAULT NULL,
+    `nama_pupuk` VARCHAR(100) NOT NULL,
+    `jumlah_karung` VARCHAR(50) NOT NULL,
+    `jumlah_berat` VARCHAR(50) NOT NULL,
+    `harga_satuan` BIGINT NOT NULL DEFAULT 0,
+    `subtotal` BIGINT NOT NULL DEFAULT 0,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_ppi_penjualan` (`penjualan_id`),
+    KEY `idx_ppi_pengelolaan` (`pengelolaan_pupuk_id`),
+    KEY `idx_ppi_pupuk` (`pupuk_id`),
+    CONSTRAINT `fk_ppi_penjualan` FOREIGN KEY (`penjualan_id`) REFERENCES `penjualan_pupuk` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_ppi_pengelolaan` FOREIGN KEY (`pengelolaan_pupuk_id`) REFERENCES `pengelolaan_pupuk` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT `fk_ppi_master` FOREIGN KEY (`pupuk_id`) REFERENCES `master_produk` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+// 10. Pastikan tabel riwayat_penjualan_pupuk tersedia (log aktivitas penjualan)
+$conn->query("CREATE TABLE IF NOT EXISTS `riwayat_penjualan_pupuk` (
+    `id` INT(11) NOT NULL AUTO_INCREMENT,
+    `penjualan_id` INT(11) DEFAULT NULL,
+    `kode_transaksi` VARCHAR(30) NOT NULL,
+    `aksi` ENUM('Terjual', 'Diperbarui', 'Dibatalkan') NOT NULL DEFAULT 'Terjual',
+    `nama_pembeli` VARCHAR(100) NOT NULL,
+    `rincian_item` TEXT NOT NULL,
+    `total_karung` VARCHAR(50) NOT NULL,
+    `total_berat` VARCHAR(50) NOT NULL,
+    `total_harga` BIGINT NOT NULL DEFAULT 0,
+    `metode_bayar` VARCHAR(30) NOT NULL DEFAULT 'Tunai',
+    `tanggal_jual` DATE NOT NULL,
+    `dicatat_oleh` VARCHAR(100) DEFAULT '-',
+    `keterangan` VARCHAR(255) DEFAULT '-',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_rp_penjualan` (`penjualan_id`),
+    KEY `idx_rp_tanggal` (`tanggal_jual`),
+    KEY `idx_rp_aksi` (`aksi`),
+    CONSTRAINT `fk_rp_penjualan` FOREIGN KEY (`penjualan_id`) REFERENCES `penjualan_pupuk` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+// Pastikan kolom alamat_pembeli tersedia pada tabel penjualan_pupuk
+$chkAlamatJual = $conn->query("SHOW COLUMNS FROM `penjualan_pupuk` LIKE 'alamat_pembeli'");
+if ($chkAlamatJual && $chkAlamatJual->num_rows === 0) {
+    $conn->query("ALTER TABLE `penjualan_pupuk` ADD COLUMN `alamat_pembeli` VARCHAR(255) DEFAULT '-' AFTER `nama_pembeli`");
+}
+
 /**
  * Format teks otomatis menjadi Title Case (Huruf depan kapital, sisanya kecil)
  */
@@ -461,6 +535,372 @@ function adjustHutangItemsStock(mysqli $conn, array $items, int $sign): void {
         if ($k > 0 || $b > 0) {
             adjustStokPengelolaanPupuk($conn, $pId, $mId, $sign * $k, $sign * $b);
         }
+    }
+}
+
+/**
+ * Menghitung kuota stok lama per pengelolaan_pupuk_id untuk validasi edit transaksi.
+ */
+function buildStockAllowanceFromItems(mysqli $conn, array $items): array {
+    $allowance = [];
+    foreach ($items as $oi) {
+        $pId = !empty($oi['pengelolaan_pupuk_id']) ? (int)$oi['pengelolaan_pupuk_id'] : 0;
+        if ($pId <= 0 && !empty($oi['pupuk_id'])) {
+            $qOldStok = $conn->prepare("SELECT id FROM pengelolaan_pupuk WHERE pupuk_id = ? ORDER BY id ASC LIMIT 1");
+            if ($qOldStok) {
+                $mId = (int)$oi['pupuk_id'];
+                $qOldStok->bind_param("i", $mId);
+                $qOldStok->execute();
+                $rOldStok = $qOldStok->get_result();
+                if ($rOldStok && ($rowOldStok = $rOldStok->fetch_assoc())) {
+                    $pId = (int)$rowOldStok['id'];
+                }
+                $qOldStok->close();
+            }
+        }
+        if ($pId > 0) {
+            $allowance[$pId] = [
+                'karung' => ($allowance[$pId]['karung'] ?? 0) + (int)($oi['karung_num'] ?? 0),
+                'berat'  => ($allowance[$pId]['berat'] ?? 0.0) + (float)($oi['berat_num'] ?? 0.0),
+            ];
+        }
+    }
+    return $allowance;
+}
+
+/**
+ * Mem-parsing, memvalidasi, dan mengecek ketersediaan stok seluruh item pupuk pada form transaksi.
+ */
+function parsePupukTransactionItems(mysqli $conn, array $post, array $oldStockAllowance = []): array {
+    $rawIds     = $post['item_pengelolaan_pupuk_id'] ?? null;
+    $rawKarungs = $post['item_jumlah_karung'] ?? null;
+    $rawBerats  = $post['item_jumlah_berat'] ?? null;
+    $rawHargas  = $post['item_harga'] ?? null;
+
+    if (!is_array($rawIds)) {
+        $rawIds     = [$post['pengelolaan_pupuk_id'] ?? ''];
+        $rawKarungs = [$post['jumlah_karung'] ?? ''];
+        $rawBerats  = [$post['jumlah_berat'] ?? ''];
+        $rawHargas  = [$post['harga'] ?? ($post['jumlah_harga'] ?? '')];
+    }
+
+    $rowCount = count($rawIds);
+    $items    = [];
+    $emptyRes = [
+        'error'              => '',
+        'items'              => [],
+        'total_karung'       => 0,
+        'total_berat'        => 0.0,
+        'total_nominal'      => 0.0,
+        'summary_nama_pupuk' => '',
+    ];
+
+    if ($rowCount === 0) {
+        $emptyRes['error'] = 'Minimal satu item pupuk wajib diisi.';
+        return $emptyRes;
+    }
+
+    $stokCache   = [];
+    $requestedBy = [];
+    $stokStmt    = $conn->prepare("
+        SELECT p.id, p.pupuk_id, COALESCE(m.nama_produk, p.nama_pupuk) AS nama_pupuk, p.jumlah_karung, p.jumlah_berat
+        FROM pengelolaan_pupuk p
+        LEFT JOIN master_produk m ON p.pupuk_id = m.id AND m.jenis = 'Pupuk'
+        WHERE p.id = ? LIMIT 1
+    ");
+
+    for ($i = 0; $i < $rowCount; $i++) {
+        $pId        = (int)($rawIds[$i] ?? 0);
+        $reqKarung  = parseKarungInt((string)($rawKarungs[$i] ?? ''));
+        $reqBerat   = parseBeratFloat((string)($rawBerats[$i] ?? ''));
+        $hargaStr   = formatRupiahStr($rawHargas[$i] ?? '');
+        $hargaFloat = parseRupiahFloat($hargaStr);
+
+        if ($pId <= 0 || $reqKarung <= 0 || $reqBerat <= 0 || $hargaFloat <= 0) {
+            if ($stokStmt) $stokStmt->close();
+            $itemNo = $i + 1;
+            $emptyRes['error'] = "Item pupuk ke-{$itemNo}: Nama Pupuk, Jumlah Karung (> 0), Jumlah Berat (> 0), dan Harga Satuan (> 0) wajib diisi dengan benar.";
+            return $emptyRes;
+        }
+
+        if (!isset($stokCache[$pId])) {
+            $stokRow = null;
+            if ($stokStmt) {
+                $stokStmt->bind_param("i", $pId);
+                $stokStmt->execute();
+                $stokRes = $stokStmt->get_result();
+                $stokRow = $stokRes ? $stokRes->fetch_assoc() : null;
+            }
+            if (!$stokRow) {
+                if ($stokStmt) $stokStmt->close();
+                $itemNo = $i + 1;
+                $emptyRes['error'] = "Item pupuk ke-{$itemNo}: Data pupuk tidak ditemukan pada tabel Stok Pupuk.";
+                return $emptyRes;
+            }
+            $stokCache[$pId] = $stokRow;
+        }
+
+        $stokRow = $stokCache[$pId];
+        $requestedBy[$pId] = [
+            'karung' => ($requestedBy[$pId]['karung'] ?? 0) + $reqKarung,
+            'berat'  => ($requestedBy[$pId]['berat'] ?? 0.0) + $reqBerat,
+        ];
+
+        $subtotalFloat = $reqKarung * $hargaFloat;
+        $items[] = [
+            'pengelolaan_pupuk_id' => $pId,
+            'pupuk_id'             => $stokRow['pupuk_id'] ? (int)$stokRow['pupuk_id'] : null,
+            'nama_pupuk'           => formatTitleCase($stokRow['nama_pupuk']),
+            'jumlah_karung'        => formatKarungStr($reqKarung),
+            'jumlah_berat'         => formatBeratStr($reqBerat),
+            'karung_num'           => $reqKarung,
+            'berat_num'            => $reqBerat,
+            'harga'                => $hargaStr,
+            'harga_num'            => $hargaFloat,
+            'subtotal'             => formatRupiahStr($subtotalFloat),
+            'subtotal_float'       => $subtotalFloat,
+        ];
+    }
+
+    if ($stokStmt) {
+        $stokStmt->close();
+    }
+
+    foreach ($requestedBy as $pId => $req) {
+        $stokRow      = $stokCache[$pId];
+        $allowKarung  = (int)($oldStockAllowance[$pId]['karung'] ?? 0);
+        $allowBerat   = (float)($oldStockAllowance[$pId]['berat'] ?? 0.0);
+        $maksKarung   = parseKarungInt($stokRow['jumlah_karung']) + $allowKarung;
+        $maksBerat    = parseBeratFloat($stokRow['jumlah_berat']) + $allowBerat;
+        $namaPupukLbl = formatTitleCase($stokRow['nama_pupuk']);
+
+        if ($req['karung'] > $maksKarung) {
+            $emptyRes['error'] = "Stok karung untuk {$namaPupukLbl} tidak mencukupi! Maksimal tersedia: {$maksKarung} Karung, diminta: {$req['karung']} Karung.";
+            return $emptyRes;
+        }
+        if ($req['berat'] > ($maksBerat + 0.01)) {
+            $emptyRes['error'] = "Stok berat untuk {$namaPupukLbl} tidak mencukupi! Maksimal tersedia: " . formatBeratStr($maksBerat) . ", diminta: " . formatBeratStr($req['berat']) . ".";
+            return $emptyRes;
+        }
+    }
+
+    $totalKarung  = 0;
+    $totalBerat   = 0.0;
+    $totalNominal = 0.0;
+    $names        = [];
+    foreach ($items as $it) {
+        $totalKarung  += $it['karung_num'];
+        $totalBerat   += $it['berat_num'];
+        $totalNominal += $it['subtotal_float'];
+        if (!in_array($it['nama_pupuk'], $names, true)) {
+            $names[] = $it['nama_pupuk'];
+        }
+    }
+
+    return [
+        'error'              => null,
+        'items'              => $items,
+        'total_karung'       => $totalKarung,
+        'total_berat'        => $totalBerat,
+        'total_nominal'      => $totalNominal,
+        'summary_nama_pupuk' => mb_substr(implode(', ', $names), 0, 255, 'UTF-8'),
+    ];
+}
+
+/**
+ * Menormalkan satu baris item penjualan pupuk untuk tampilan dan kalkulasi.
+ */
+function normalizePenjualanItemRow(array $row): array {
+    $kNum     = parseKarungInt($row['jumlah_karung'] ?? '');
+    $bNum     = parseBeratFloat($row['jumlah_berat'] ?? '');
+    $hargaInt = (int)($row['harga_satuan'] ?? 0);
+    $subInt   = (int)($row['subtotal'] ?? ($kNum * $hargaInt));
+
+    return [
+        'id'                   => (int)($row['id'] ?? 0),
+        'penjualan_id'         => (int)($row['penjualan_id'] ?? 0),
+        'pengelolaan_pupuk_id' => !empty($row['pengelolaan_pupuk_id']) ? (int)$row['pengelolaan_pupuk_id'] : null,
+        'pupuk_id'             => !empty($row['pupuk_id']) ? (int)$row['pupuk_id'] : null,
+        'nama_pupuk'           => formatTitleCase($row['nama_pupuk'] ?? '-'),
+        'jumlah_karung'        => formatTitleCase($row['jumlah_karung'] ?? formatKarungStr($kNum)),
+        'jumlah_berat'         => formatTitleCase($row['jumlah_berat'] ?? formatBeratStr($bNum)),
+        'karung_num'           => $kNum,
+        'berat_num'            => $bNum,
+        'harga_satuan'         => $hargaInt,
+        'harga'                => formatRupiahStr($hargaInt),
+        'subtotal_num'         => $subInt,
+        'subtotal'             => formatRupiahStr($subInt),
+    ];
+}
+
+/**
+ * Mengambil seluruh baris item pupuk milik satu transaksi penjualan.
+ */
+function getPenjualanItemsById(mysqli $conn, int $penjualanId): array {
+    $items = [];
+    if ($penjualanId <= 0) {
+        return $items;
+    }
+
+    $stmt = $conn->prepare("
+        SELECT i.id, i.penjualan_id, i.pengelolaan_pupuk_id, i.pupuk_id,
+               COALESCE(m.nama_produk, p.nama_pupuk, i.nama_pupuk) AS nama_pupuk,
+               i.jumlah_karung, i.jumlah_berat, i.harga_satuan, i.subtotal
+        FROM penjualan_pupuk_items i
+        LEFT JOIN pengelolaan_pupuk p ON i.pengelolaan_pupuk_id = p.id
+        LEFT JOIN master_produk m ON COALESCE(p.pupuk_id, i.pupuk_id) = m.id AND m.jenis = 'Pupuk'
+        WHERE i.penjualan_id = ?
+        ORDER BY i.id ASC
+    ");
+    if ($stmt) {
+        $stmt->bind_param("i", $penjualanId);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        while ($res && ($row = $res->fetch_assoc())) {
+            $items[] = normalizePenjualanItemRow($row);
+        }
+        $stmt->close();
+    }
+
+    return $items;
+}
+
+/**
+ * Mengambil seluruh item penjualan pupuk dikelompokkan per penjualan_id.
+ */
+function getAllPenjualanItemsGrouped(mysqli $conn): array {
+    $grouped = [];
+    $res = $conn->query("
+        SELECT i.id, i.penjualan_id, i.pengelolaan_pupuk_id, i.pupuk_id,
+               COALESCE(m.nama_produk, p.nama_pupuk, i.nama_pupuk) AS nama_pupuk,
+               i.jumlah_karung, i.jumlah_berat, i.harga_satuan, i.subtotal
+        FROM penjualan_pupuk_items i
+        LEFT JOIN pengelolaan_pupuk p ON i.pengelolaan_pupuk_id = p.id
+        LEFT JOIN master_produk m ON COALESCE(p.pupuk_id, i.pupuk_id) = m.id AND m.jenis = 'Pupuk'
+        ORDER BY i.penjualan_id ASC, i.id ASC
+    ");
+    if ($res) {
+        while ($row = $res->fetch_assoc()) {
+            $pid = (int)$row['penjualan_id'];
+            $grouped[$pid][] = normalizePenjualanItemRow($row);
+        }
+    }
+
+    return $grouped;
+}
+
+/**
+ * Menyimpan ulang daftar item penjualan pada penjualan_pupuk_items.
+ */
+function savePenjualanItems(mysqli $conn, int $penjualanId, array $items): void {
+    $del = $conn->prepare("DELETE FROM penjualan_pupuk_items WHERE penjualan_id = ?");
+    if ($del) {
+        $del->bind_param("i", $penjualanId);
+        $del->execute();
+        $del->close();
+    }
+
+    $ins = $conn->prepare("
+        INSERT INTO penjualan_pupuk_items (
+            penjualan_id, pengelolaan_pupuk_id, pupuk_id,
+            nama_pupuk, jumlah_karung, jumlah_berat,
+            harga_satuan, subtotal
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ");
+    if (!$ins) {
+        return;
+    }
+
+    foreach ($items as $item) {
+        $pId    = $item['pengelolaan_pupuk_id'];
+        $mId    = $item['pupuk_id'];
+        $nPupuk = $item['nama_pupuk'];
+        $jKar   = $item['jumlah_karung'];
+        $jBer   = $item['jumlah_berat'];
+        $hrg    = (int)round((float)($item['harga_num'] ?? 0));
+        $sub    = (int)round((float)($item['subtotal_float'] ?? 0));
+        $ins->bind_param("iiisssii", $penjualanId, $pId, $mId, $nPupuk, $jKar, $jBer, $hrg, $sub);
+        $ins->execute();
+    }
+    $ins->close();
+}
+
+/**
+ * Membuat kode transaksi penjualan unik (mis. PJL-20261112-0001).
+ */
+function generateKodePenjualan(mysqli $conn, string $tanggal): string {
+    $tglCode = preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggal) ? str_replace('-', '', $tanggal) : date('Ymd');
+    $prefix  = "PJL-{$tglCode}-";
+    $like    = $prefix . '%';
+    $nextSeq = 1;
+
+    $stmt = $conn->prepare("SELECT kode_transaksi FROM penjualan_pupuk WHERE kode_transaksi LIKE ? ORDER BY id DESC LIMIT 1");
+    if ($stmt) {
+        $stmt->bind_param("s", $like);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        if ($res && ($row = $res->fetch_assoc())) {
+            $lastKode = (string)$row['kode_transaksi'];
+            if (preg_match('/(\d+)$/', $lastKode, $m)) {
+                $nextSeq = ((int)$m[1]) + 1;
+            }
+        }
+        $stmt->close();
+    }
+
+    return sprintf('%s%04d', $prefix, $nextSeq);
+}
+
+/**
+ * Mencatat jejak transaksi penjualan ke tabel riwayat_penjualan_pupuk.
+ */
+function recordRiwayatPenjualan(
+    mysqli $conn,
+    ?int $penjualanId,
+    string $kodeTransaksi,
+    string $aksi,
+    string $namaPembeli,
+    array $items,
+    string $totalKarung,
+    string $totalBerat,
+    int $totalHarga,
+    string $metodeBayar,
+    string $tanggalJual,
+    string $keterangan
+): void {
+    $parts = [];
+    foreach ($items as $it) {
+        $hargaLabel = $it['harga'] ?? formatRupiahStr($it['harga_satuan'] ?? 0);
+        $parts[] = "{$it['nama_pupuk']} ({$it['jumlah_karung']} / {$it['jumlah_berat']} @ {$hargaLabel})";
+    }
+    $rincianItem = !empty($parts) ? implode('; ', $parts) : '-';
+    $dicatatOleh = formatTitleCase($_SESSION['nama'] ?? ($_SESSION['username'] ?? '-'));
+
+    $stmt = $conn->prepare("
+        INSERT INTO riwayat_penjualan_pupuk (
+            penjualan_id, kode_transaksi, aksi, nama_pembeli,
+            rincian_item, total_karung, total_berat, total_harga,
+            metode_bayar, tanggal_jual, dicatat_oleh, keterangan
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ");
+    if ($stmt) {
+        $stmt->bind_param(
+            "issssssissss",
+            $penjualanId,
+            $kodeTransaksi,
+            $aksi,
+            $namaPembeli,
+            $rincianItem,
+            $totalKarung,
+            $totalBerat,
+            $totalHarga,
+            $metodeBayar,
+            $tanggalJual,
+            $dicatatOleh,
+            $keterangan
+        );
+        $stmt->execute();
+        $stmt->close();
     }
 }
 

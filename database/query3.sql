@@ -146,3 +146,74 @@ LEFT JOIN `hutang_pupuk_items` hpi ON hpi.`hutang_id` = h.`id`
 LEFT JOIN `pengelolaan_pupuk` p ON h.`pengelolaan_pupuk_id` = p.`id`
 LEFT JOIN `master_produk` m ON COALESCE(p.`pupuk_id`, h.`pupuk_id`) = m.`id` AND m.`jenis` = 'Pupuk'
 WHERE hpi.`id` IS NULL;
+
+-- 9. Tabel transaksi penjualan pupuk (berdiri sendiri, terpisah dari hutang piutang)
+CREATE TABLE IF NOT EXISTS `penjualan_pupuk` (
+    `id` INT(11) NOT NULL AUTO_INCREMENT,
+    `kode_transaksi` VARCHAR(30) NOT NULL,
+    `anggota_id` INT(11) DEFAULT NULL,
+    `nama_pembeli` VARCHAR(100) NOT NULL,
+    `nama_pupuk` VARCHAR(255) NOT NULL,
+    `jumlah_karung` VARCHAR(50) NOT NULL,
+    `jumlah_berat` VARCHAR(50) NOT NULL,
+    `total_harga` BIGINT NOT NULL DEFAULT 0,
+    `metode_bayar` ENUM('Tunai', 'Transfer', 'QRIS') NOT NULL DEFAULT 'Tunai',
+    `tanggal_jual` DATE NOT NULL,
+    `keterangan` VARCHAR(255) DEFAULT '-',
+    `dicatat_oleh` VARCHAR(100) DEFAULT '-',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uniq_kode_penjualan` (`kode_transaksi`),
+    KEY `idx_penjualan_anggota` (`anggota_id`),
+    KEY `idx_penjualan_tanggal` (`tanggal_jual`),
+    CONSTRAINT `fk_penjualan_anggota` FOREIGN KEY (`anggota_id`) REFERENCES `anggota_petani` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 10. Tabel detail item pupuk per transaksi penjualan (mendukung multi-item pupuk)
+CREATE TABLE IF NOT EXISTS `penjualan_pupuk_items` (
+    `id` INT(11) NOT NULL AUTO_INCREMENT,
+    `penjualan_id` INT(11) NOT NULL,
+    `pengelolaan_pupuk_id` INT(11) DEFAULT NULL,
+    `pupuk_id` INT(11) DEFAULT NULL,
+    `nama_pupuk` VARCHAR(100) NOT NULL,
+    `jumlah_karung` VARCHAR(50) NOT NULL,
+    `jumlah_berat` VARCHAR(50) NOT NULL,
+    `harga_satuan` BIGINT NOT NULL DEFAULT 0,
+    `subtotal` BIGINT NOT NULL DEFAULT 0,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_ppi_penjualan` (`penjualan_id`),
+    KEY `idx_ppi_pengelolaan` (`pengelolaan_pupuk_id`),
+    KEY `idx_ppi_pupuk` (`pupuk_id`),
+    CONSTRAINT `fk_ppi_penjualan` FOREIGN KEY (`penjualan_id`) REFERENCES `penjualan_pupuk` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_ppi_pengelolaan` FOREIGN KEY (`pengelolaan_pupuk_id`) REFERENCES `pengelolaan_pupuk` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT `fk_ppi_master` FOREIGN KEY (`pupuk_id`) REFERENCES `master_produk` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 11. Tabel riwayat / log aktivitas penjualan pupuk
+CREATE TABLE IF NOT EXISTS `riwayat_penjualan_pupuk` (
+    `id` INT(11) NOT NULL AUTO_INCREMENT,
+    `penjualan_id` INT(11) DEFAULT NULL,
+    `kode_transaksi` VARCHAR(30) NOT NULL,
+    `aksi` ENUM('Terjual', 'Diperbarui', 'Dibatalkan') NOT NULL DEFAULT 'Terjual',
+    `nama_pembeli` VARCHAR(100) NOT NULL,
+    `rincian_item` TEXT NOT NULL,
+    `total_karung` VARCHAR(50) NOT NULL,
+    `total_berat` VARCHAR(50) NOT NULL,
+    `total_harga` BIGINT NOT NULL DEFAULT 0,
+    `metode_bayar` VARCHAR(30) NOT NULL DEFAULT 'Tunai',
+    `tanggal_jual` DATE NOT NULL,
+    `dicatat_oleh` VARCHAR(100) DEFAULT '-',
+    `keterangan` VARCHAR(255) DEFAULT '-',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_rp_penjualan` (`penjualan_id`),
+    KEY `idx_rp_tanggal` (`tanggal_jual`),
+    KEY `idx_rp_aksi` (`aksi`),
+    CONSTRAINT `fk_rp_penjualan` FOREIGN KEY (`penjualan_id`) REFERENCES `penjualan_pupuk` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 12. Tambah kolom alamat_pembeli pada penjualan_pupuk untuk pembeli non-anggota
+ALTER TABLE `penjualan_pupuk`
+    ADD COLUMN `alamat_pembeli` VARCHAR(255) DEFAULT '-' AFTER `nama_pembeli`;
