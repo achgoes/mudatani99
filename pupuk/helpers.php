@@ -171,6 +171,37 @@ $conn->query("CREATE TABLE IF NOT EXISTS `pembayaran_hutang_pupuk` (
     CONSTRAINT `fk_bayar_hutang_parent` FOREIGN KEY (`hutang_id`) REFERENCES `hutang_pupuk` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 
+// 7. Pastikan tabel hutang_pupuk_items tersedia (1 transaksi hutang bisa memiliki beberapa item pupuk)
+$conn->query("CREATE TABLE IF NOT EXISTS `hutang_pupuk_items` (
+    `id` INT(11) NOT NULL AUTO_INCREMENT,
+    `hutang_id` INT(11) NOT NULL,
+    `pengelolaan_pupuk_id` INT(11) DEFAULT NULL,
+    `pupuk_id` INT(11) DEFAULT NULL,
+    `nama_pupuk` VARCHAR(100) NOT NULL,
+    `jumlah_karung` VARCHAR(50) NOT NULL,
+    `jumlah_berat` VARCHAR(50) NOT NULL,
+    `harga` VARCHAR(50) NOT NULL DEFAULT 'Rp 0',
+    `subtotal` VARCHAR(50) NOT NULL DEFAULT 'Rp 0',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_hpi_hutang` (`hutang_id`),
+    KEY `idx_hpi_pengelolaan` (`pengelolaan_pupuk_id`),
+    KEY `idx_hpi_pupuk` (`pupuk_id`),
+    CONSTRAINT `fk_hpi_hutang` FOREIGN KEY (`hutang_id`) REFERENCES `hutang_pupuk` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_hpi_pengelolaan` FOREIGN KEY (`pengelolaan_pupuk_id`) REFERENCES `pengelolaan_pupuk` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT `fk_hpi_master` FOREIGN KEY (`pupuk_id`) REFERENCES `master_produk` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+// Pastikan kolom nama_pupuk cukup menampung gabungan beberapa item pupuk
+foreach (['hutang_pupuk', 'riwayat_hutang_pupuk', 'pembayaran_hutang_pupuk'] as $tblNamaPupuk) {
+    $chkCol = $conn->query("SHOW COLUMNS FROM `{$tblNamaPupuk}` LIKE 'nama_pupuk'");
+    if ($chkCol && ($colRow = $chkCol->fetch_assoc())) {
+        if (stripos((string)($colRow['Type'] ?? ''), 'varchar(100)') !== false) {
+            $conn->query("ALTER TABLE `{$tblNamaPupuk}` MODIFY COLUMN `nama_pupuk` VARCHAR(255) NOT NULL");
+        }
+    }
+}
+
 /**
  * Format teks otomatis menjadi Title Case (Huruf depan kapital, sisanya kecil)
  */
@@ -292,6 +323,145 @@ function adjustStokPengelolaanPupuk(mysqli $conn, ?int $pengelolaanId, ?int $pup
         return $ok;
     }
     return false;
+}
+
+/**
+ * Mengambil seluruh baris item pupuk milik satu transaksi hutang dari hutang_pupuk_items.
+ */
+function getHutangItemsByHutangId(mysqli $conn, int $hutangId): array {
+    $items = [];
+    if ($hutangId <= 0) {
+        return $items;
+    }
+
+    $stmt = $conn->prepare("
+        SELECT i.id, i.hutang_id, i.pengelolaan_pupuk_id, i.pupuk_id,
+               COALESCE(m.nama_produk, p.nama_pupuk, i.nama_pupuk) AS nama_pupuk,
+               i.jumlah_karung, i.jumlah_berat,
+               COALESCE(i.harga, 'Rp 0') AS harga,
+               COALESCE(i.subtotal, 'Rp 0') AS subtotal
+        FROM hutang_pupuk_items i
+        LEFT JOIN pengelolaan_pupuk p ON i.pengelolaan_pupuk_id = p.id
+        LEFT JOIN master_produk m ON COALESCE(p.pupuk_id, i.pupuk_id) = m.id AND m.jenis = 'Pupuk'
+        WHERE i.hutang_id = ?
+        ORDER BY i.id ASC
+    ");
+    if ($stmt) {
+        $stmt->bind_param("i", $hutangId);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        while ($res && ($row = $res->fetch_assoc())) {
+            $items[] = normalizeHutangItemRow($row);
+        }
+        $stmt->close();
+    }
+
+    return $items;
+}
+
+/**
+ * Mengambil seluruh item pupuk untuk semua transaksi hutang, dikelompokkan per hutang_id.
+ */
+function getAllHutangItemsGrouped(mysqli $conn): array {
+    $grouped = [];
+    $res = $conn->query("
+        SELECT i.id, i.hutang_id, i.pengelolaan_pupuk_id, i.pupuk_id,
+               COALESCE(m.nama_produk, p.nama_pupuk, i.nama_pupuk) AS nama_pupuk,
+               i.jumlah_karung, i.jumlah_berat,
+               COALESCE(i.harga, 'Rp 0') AS harga,
+               COALESCE(i.subtotal, 'Rp 0') AS subtotal
+        FROM hutang_pupuk_items i
+        LEFT JOIN pengelolaan_pupuk p ON i.pengelolaan_pupuk_id = p.id
+        LEFT JOIN master_produk m ON COALESCE(p.pupuk_id, i.pupuk_id) = m.id AND m.jenis = 'Pupuk'
+        ORDER BY i.hutang_id ASC, i.id ASC
+    ");
+    if ($res) {
+        while ($row = $res->fetch_assoc()) {
+            $hid = (int)$row['hutang_id'];
+            $grouped[$hid][] = normalizeHutangItemRow($row);
+        }
+    }
+
+    return $grouped;
+}
+
+/**
+ * Menormalkan satu baris item hutang pupuk untuk tampilan dan kalkulasi.
+ */
+function normalizeHutangItemRow(array $row): array {
+    $kNum     = parseKarungInt($row['jumlah_karung'] ?? '');
+    $bNum     = parseBeratFloat($row['jumlah_berat'] ?? '');
+    $hargaStr = formatRupiahStr($row['harga'] ?? 'Rp 0');
+    $hargaNum = parseRupiahFloat($hargaStr);
+    $subRaw   = parseRupiahFloat($row['subtotal'] ?? 'Rp 0');
+    $subStr   = ($subRaw > 0) ? formatRupiahStr($subRaw) : formatRupiahStr($kNum * $hargaNum);
+
+    return [
+        'id'                   => (int)($row['id'] ?? 0),
+        'hutang_id'            => (int)($row['hutang_id'] ?? 0),
+        'pengelolaan_pupuk_id' => !empty($row['pengelolaan_pupuk_id']) ? (int)$row['pengelolaan_pupuk_id'] : null,
+        'pupuk_id'             => !empty($row['pupuk_id']) ? (int)$row['pupuk_id'] : null,
+        'nama_pupuk'           => formatTitleCase($row['nama_pupuk'] ?? '-'),
+        'jumlah_karung'        => formatTitleCase($row['jumlah_karung'] ?? formatKarungStr($kNum)),
+        'jumlah_berat'         => formatTitleCase($row['jumlah_berat'] ?? formatBeratStr($bNum)),
+        'karung_num'           => $kNum,
+        'berat_num'            => $bNum,
+        'harga'                => $hargaStr,
+        'harga_num'            => $hargaNum,
+        'subtotal'             => $subStr,
+        'subtotal_num'         => parseRupiahFloat($subStr),
+    ];
+}
+
+/**
+ * Mengganti daftar item pupuk pada hutang_pupuk_items untuk transaksi tertentu.
+ */
+function saveHutangItems(mysqli $conn, int $hutangId, array $items): void {
+    $del = $conn->prepare("DELETE FROM hutang_pupuk_items WHERE hutang_id = ?");
+    if ($del) {
+        $del->bind_param("i", $hutangId);
+        $del->execute();
+        $del->close();
+    }
+
+    $ins = $conn->prepare("
+        INSERT INTO hutang_pupuk_items (
+            hutang_id, pengelolaan_pupuk_id, pupuk_id,
+            nama_pupuk, jumlah_karung, jumlah_berat,
+            harga, subtotal
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ");
+    if (!$ins) {
+        return;
+    }
+
+    foreach ($items as $item) {
+        $pId    = $item['pengelolaan_pupuk_id'];
+        $mId    = $item['pupuk_id'];
+        $nPupuk = $item['nama_pupuk'];
+        $jKar   = $item['jumlah_karung'];
+        $jBer   = $item['jumlah_berat'];
+        $hrg    = $item['harga'];
+        $sub    = $item['subtotal'];
+        $ins->bind_param("iiisssss", $hutangId, $pId, $mId, $nPupuk, $jKar, $jBer, $hrg, $sub);
+        $ins->execute();
+    }
+    $ins->close();
+}
+
+/**
+ * Menyesuaikan stok pengelolaan_pupuk untuk sekumpulan item ($sign = -1 mengurangi, +1 mengembalikan).
+ */
+function adjustHutangItemsStock(mysqli $conn, array $items, int $sign): void {
+    foreach ($items as $item) {
+        $pId = !empty($item['pengelolaan_pupuk_id']) ? (int)$item['pengelolaan_pupuk_id'] : null;
+        $mId = !empty($item['pupuk_id']) ? (int)$item['pupuk_id'] : null;
+        $k   = (int)($item['karung_num'] ?? parseKarungInt($item['jumlah_karung'] ?? ''));
+        $b   = (float)($item['berat_num'] ?? parseBeratFloat($item['jumlah_berat'] ?? ''));
+        if ($k > 0 || $b > 0) {
+            adjustStokPengelolaanPupuk($conn, $pId, $mId, $sign * $k, $sign * $b);
+        }
+    }
 }
 
 /**
@@ -655,6 +825,27 @@ $conn->query("
         tanggal              = VALUES(tanggal),
         status               = VALUES(status),
         tanggal_lunas        = VALUES(tanggal_lunas)
+");
+
+// Backfill item hutang lama ke tabel hutang_pupuk_items jika belum tercatat
+$conn->query("
+    INSERT INTO hutang_pupuk_items (
+        hutang_id, pengelolaan_pupuk_id, pupuk_id,
+        nama_pupuk, jumlah_karung, jumlah_berat,
+        harga, subtotal, created_at
+    )
+    SELECT
+        h.id, h.pengelolaan_pupuk_id, h.pupuk_id,
+        COALESCE(m.nama_produk, p.nama_pupuk, h.nama_pupuk),
+        h.jumlah_karung, h.jumlah_berat,
+        COALESCE(h.harga, 'Rp 0'),
+        COALESCE(h.jumlah_hutang, 'Rp 0'),
+        h.created_at
+    FROM hutang_pupuk h
+    LEFT JOIN hutang_pupuk_items hpi ON hpi.hutang_id = h.id
+    LEFT JOIN pengelolaan_pupuk p ON h.pengelolaan_pupuk_id = p.id
+    LEFT JOIN master_produk m ON COALESCE(p.pupuk_id, h.pupuk_id) = m.id AND m.jenis = 'Pupuk'
+    WHERE hpi.id IS NULL
 ");
 
 ensureBackfillPembayaranHutang($conn);

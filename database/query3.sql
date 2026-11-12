@@ -96,3 +96,53 @@ SET
     b.`anggota_id`  = h.`anggota_id`,
     b.`nama_petani` = COALESCE(a.`nama_petani`, h.`nama_petani`),
     b.`nama_pupuk`  = COALESCE(m.`nama_produk`, p.`nama_pupuk`, h.`nama_pupuk`);
+
+-- 6. Pastikan kolom nama_pupuk cukup panjang menampung gabungan beberapa item pupuk
+ALTER TABLE `hutang_pupuk`
+    MODIFY COLUMN `nama_pupuk` VARCHAR(255) NOT NULL;
+
+ALTER TABLE `riwayat_hutang_pupuk`
+    MODIFY COLUMN `nama_pupuk` VARCHAR(255) NOT NULL;
+
+ALTER TABLE `pembayaran_hutang_pupuk`
+    MODIFY COLUMN `nama_pupuk` VARCHAR(255) NOT NULL;
+
+-- 7. Tabel detail item pupuk per transaksi hutang (1 transaksi dapat memiliki beberapa item pupuk)
+CREATE TABLE IF NOT EXISTS `hutang_pupuk_items` (
+    `id` INT(11) NOT NULL AUTO_INCREMENT,
+    `hutang_id` INT(11) NOT NULL,
+    `pengelolaan_pupuk_id` INT(11) DEFAULT NULL,
+    `pupuk_id` INT(11) DEFAULT NULL,
+    `nama_pupuk` VARCHAR(100) NOT NULL,
+    `jumlah_karung` VARCHAR(50) NOT NULL,
+    `jumlah_berat` VARCHAR(50) NOT NULL,
+    `harga` VARCHAR(50) NOT NULL DEFAULT 'Rp 0',
+    `subtotal` VARCHAR(50) NOT NULL DEFAULT 'Rp 0',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_hpi_hutang` (`hutang_id`),
+    KEY `idx_hpi_pengelolaan` (`pengelolaan_pupuk_id`),
+    KEY `idx_hpi_pupuk` (`pupuk_id`),
+    CONSTRAINT `fk_hpi_hutang` FOREIGN KEY (`hutang_id`) REFERENCES `hutang_pupuk` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_hpi_pengelolaan` FOREIGN KEY (`pengelolaan_pupuk_id`) REFERENCES `pengelolaan_pupuk` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT `fk_hpi_master` FOREIGN KEY (`pupuk_id`) REFERENCES `master_produk` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 8. Backfill item hutang lama ke tabel hutang_pupuk_items jika belum tercatat
+INSERT INTO `hutang_pupuk_items` (
+    `hutang_id`, `pengelolaan_pupuk_id`, `pupuk_id`,
+    `nama_pupuk`, `jumlah_karung`, `jumlah_berat`,
+    `harga`, `subtotal`, `created_at`
+)
+SELECT
+    h.`id`, h.`pengelolaan_pupuk_id`, h.`pupuk_id`,
+    COALESCE(m.`nama_produk`, p.`nama_pupuk`, h.`nama_pupuk`),
+    h.`jumlah_karung`, h.`jumlah_berat`,
+    COALESCE(h.`harga`, 'Rp 0'),
+    COALESCE(h.`jumlah_hutang`, 'Rp 0'),
+    h.`created_at`
+FROM `hutang_pupuk` h
+LEFT JOIN `hutang_pupuk_items` hpi ON hpi.`hutang_id` = h.`id`
+LEFT JOIN `pengelolaan_pupuk` p ON h.`pengelolaan_pupuk_id` = p.`id`
+LEFT JOIN `master_produk` m ON COALESCE(p.`pupuk_id`, h.`pupuk_id`) = m.`id` AND m.`jenis` = 'Pupuk'
+WHERE hpi.`id` IS NULL;

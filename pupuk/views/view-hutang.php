@@ -143,28 +143,50 @@
                             </div>
                         </td>
                         <td>
-                            <span class="badge-nama-pupuk">
-                                <i class="fa-solid fa-flask-vial"></i>
-                                <?= htmlspecialchars($row['nama_pupuk']) ?>
-                            </span>
+                            <div class="hutang-item-stack">
+                                <?php foreach ($row['items'] as $hItem): ?>
+                                    <span class="badge-nama-pupuk">
+                                        <i class="fa-solid fa-flask-vial"></i>
+                                        <?= htmlspecialchars($hItem['nama_pupuk']) ?>
+                                    </span>
+                                <?php endforeach; ?>
+                            </div>
                         </td>
                         <td>
-                            <span class="badge-karung-pupuk">
-                                <i class="fa-solid fa-boxes-stacked"></i>
-                                <?= htmlspecialchars($row['jumlah_karung']) ?>
-                            </span>
+                            <div class="hutang-item-stack">
+                                <?php foreach ($row['items'] as $hItem): ?>
+                                    <span class="badge-karung-pupuk">
+                                        <i class="fa-solid fa-boxes-stacked"></i>
+                                        <?= htmlspecialchars($hItem['jumlah_karung']) ?>
+                                    </span>
+                                <?php endforeach; ?>
+                                <?php if (count($row['items']) > 1): ?>
+                                    <span class="hutang-item-total-note">Total: <?= htmlspecialchars($row['jumlah_karung']) ?></span>
+                                <?php endif; ?>
+                            </div>
                         </td>
                         <td>
-                            <span class="nik-badge">
-                                <i class="fa-solid fa-scale-balanced text-agro-600"></i>
-                                <?= htmlspecialchars($row['jumlah_berat']) ?>
-                            </span>
+                            <div class="hutang-item-stack">
+                                <?php foreach ($row['items'] as $hItem): ?>
+                                    <span class="nik-badge">
+                                        <i class="fa-solid fa-scale-balanced text-agro-600"></i>
+                                        <?= htmlspecialchars($hItem['jumlah_berat']) ?>
+                                    </span>
+                                <?php endforeach; ?>
+                                <?php if (count($row['items']) > 1): ?>
+                                    <span class="hutang-item-total-note">Total: <?= htmlspecialchars($row['jumlah_berat']) ?></span>
+                                <?php endif; ?>
+                            </div>
                         </td>
                         <td>
-                            <span class="badge-harga-pupuk" title="Harga satuan per kantong">
-                                <i class="fa-solid fa-tag"></i>
-                                <?= htmlspecialchars($row['harga']) ?>
-                            </span>
+                            <div class="hutang-item-stack">
+                                <?php foreach ($row['items'] as $hItem): ?>
+                                    <span class="badge-harga-pupuk" title="Harga satuan per kantong">
+                                        <i class="fa-solid fa-tag"></i>
+                                        <?= htmlspecialchars($hItem['harga']) ?>
+                                    </span>
+                                <?php endforeach; ?>
+                            </div>
                         </td>
                         <td>
                             <span class="badge-jumlah-hutang" title="Total Nilai Hutang (Jumlah Karung × Harga Satuan)">
@@ -219,19 +241,7 @@
                                     <span>Info</span>
                                 </button>
 
-                                <?php if ($isLunas): ?>
-                                    <!-- Form Cepat Batal Lunas -->
-                                    <form action="<?= appUrl('pupuk/?view=' . urlencode($activeView)) ?>" method="POST" class="inline">
-                                        <input type="hidden" name="action" value="toggle_status_hutang">
-                                        <input type="hidden" name="return_view" value="<?= htmlspecialchars($activeView) ?>">
-                                        <input type="hidden" name="id" value="<?= (int)$row['id'] ?>">
-                                        <input type="hidden" name="new_status" value="Belum Lunas">
-                                        <button type="submit" class="btn-table-batal-lunas" title="Ubah status kembali menjadi Belum Lunas">
-                                            <i class="fa-solid fa-rotate-left"></i>
-                                            <span>Batal Lunas</span>
-                                        </button>
-                                    </form>
-                                <?php else: ?>
+                                <?php if (!$isLunas): ?>
                                     <!-- Aksi Bayar: Membuka Pop Up Bayar Jumlah Rupiah -->
                                     <button
                                         type="button"
@@ -242,26 +252,26 @@
                                         <i class="fa-solid fa-money-bill-wave"></i>
                                         <span>Bayar</span>
                                     </button>
+
+                                    <button
+                                        type="button"
+                                        class="btn-table-edit"
+                                        onclick="openModalEditHutang(<?= htmlspecialchars(json_encode($row)) ?>)"
+                                        title="Edit Data Hutang Pupuk"
+                                    >
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                        <span>Edit</span>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        class="btn-table-delete"
+                                        onclick="openModalDeleteHutang(<?= (int)$row['id'] ?>, '<?= htmlspecialchars(addslashes($row['nama_petani'])) ?>', '<?= htmlspecialchars(addslashes($row['nama_pupuk'])) ?>', '<?= htmlspecialchars(addslashes($row['jumlah_karung'])) ?>')"
+                                        title="Hapus Data & Kembalikan Stok Karung"
+                                    >
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
                                 <?php endif; ?>
-
-                                <button
-                                    type="button"
-                                    class="btn-table-edit"
-                                    onclick="openModalEditHutang(<?= htmlspecialchars(json_encode($row)) ?>)"
-                                    title="Edit Data Hutang Pupuk"
-                                >
-                                    <i class="fa-solid fa-pen-to-square"></i>
-                                    <span>Edit</span>
-                                </button>
-
-                                <button
-                                    type="button"
-                                    class="btn-table-delete"
-                                    onclick="openModalDeleteHutang(<?= (int)$row['id'] ?>, '<?= htmlspecialchars(addslashes($row['nama_petani'])) ?>', '<?= htmlspecialchars(addslashes($row['nama_pupuk'])) ?>', '<?= htmlspecialchars(addslashes($row['jumlah_karung'])) ?>')"
-                                    title="Hapus Data & Kembalikan Stok Karung"
-                                >
-                                    <i class="fa-solid fa-trash-can"></i>
-                                </button>
                             </div>
                         </td>
                     </tr>

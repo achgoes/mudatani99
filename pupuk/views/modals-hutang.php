@@ -1,5 +1,9 @@
+<?php
+$hutangFormAction = appUrl('pupuk/?view=' . urlencode($activeView === 'kelola' ? 'hutang' : $activeView));
+$hutangReturnView = $activeView === 'kelola' ? 'hutang' : $activeView;
+?>
 <!-- ========================================================
-     MODAL 4: TAMBAH HUTANG PIUTANG PUPUK
+     MODAL 4: TAMBAH HUTANG PIUTANG PUPUK (MULTI-ITEM)
 ======================================================== -->
 <div id="modalTambahHutang" class="custom-modal-backdrop" role="dialog" aria-modal="true">
     <div class="custom-modal-dialog modal-hutang-dialog">
@@ -13,9 +17,9 @@
             </button>
         </div>
 
-        <form action="<?= appUrl('pupuk/?view=' . urlencode($activeView === 'kelola' ? 'hutang' : $activeView)) ?>" method="POST" id="formTambahHutang" novalidate>
+        <form action="<?= $hutangFormAction ?>" method="POST" id="formTambahHutang" novalidate>
             <input type="hidden" name="action" value="add_hutang">
-            <input type="hidden" name="return_view" value="<?= htmlspecialchars($activeView === 'kelola' ? 'hutang' : $activeView) ?>">
+            <input type="hidden" name="return_view" value="<?= htmlspecialchars($hutangReturnView) ?>">
 
             <div class="custom-modal-body">
                 <!-- Notifikasi Peringatan Jika Ada Kolom Belum Diisi -->
@@ -41,85 +45,37 @@
                     </select>
                 </div>
 
-                <div class="modal-form-group">
-                    <label class="modal-label" for="add-hutang-pupuk">Nama Pupuk (Dari Stok Pupuk) <span class="text-rose-500">*</span></label>
-                    <select id="add-hutang-pupuk" name="pengelolaan_pupuk_id" required class="modal-input" onchange="onPupukHutangChange('add')">
-                        <option value="" data-karung="0" data-berat="0" data-bpk="50">-- Pilih Pupuk --</option>
-                        <?php foreach ($pupukList as $pk): ?>
-                            <option
-                                value="<?= (int)$pk['id'] ?>"
-                                data-karung="<?= (int)$pk['karung_num'] ?>"
-                                data-berat="<?= (float)$pk['berat_num'] ?>"
-                                data-bpk="<?= (float)$pk['berat_per_karung'] ?>"
-                            >
-                                <?= htmlspecialchars($pk['nama_pupuk']) ?> (Tersedia: <?= htmlspecialchars($pk['jumlah_karung']) ?> / <?= htmlspecialchars($pk['jumlah_berat']) ?>)
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                    <p class="modal-helper-text" id="add-hutang-stok-info">Stok pada menu Stok Pupuk akan otomatis berkurang sesuai jumlah karung yang dipakai.</p>
+                <!-- Daftar Item Pupuk Dinamis -->
+                <div class="hutang-items-section">
+                    <div class="hutang-items-header">
+                        <div>
+                            <span class="modal-label mb-0">Daftar Item Pupuk <span class="text-rose-500">*</span></span>
+                            <p class="modal-helper-text mt-0.5">Stok pada menu Stok Pupuk otomatis berkurang sesuai tiap item yang dipilih.</p>
+                        </div>
+                        <button type="button" class="btn-add-hutang-item" onclick="addHutangItemRow('add')">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>Tambah Item Pupuk</span>
+                        </button>
+                    </div>
+                    <div id="add-hutang-items-container" class="hutang-items-container"></div>
                 </div>
 
-                <!-- Baris 2 Kolom: Jumlah Karung & Jumlah Berat -->
+                <!-- Baris 2 Kolom: Jumlah Hutang Total & Sisa Hutang -->
                 <div class="modal-form-grid-2">
                     <div class="modal-form-group">
-                        <label class="modal-label" for="add-hutang-karung">Jumlah Karung <span class="text-rose-500">*</span></label>
-                        <input
-                            type="text"
-                            id="add-hutang-karung"
-                            name="jumlah_karung"
-                            required
-                            class="modal-input"
-                            placeholder="Contoh: 5 Karung"
-                            oninput="autoCalcBeratHutang('add'); autoCalcTotalHutang('add')"
-                        >
-                    </div>
-
-                    <div class="modal-form-group">
-                        <label class="modal-label" for="add-hutang-berat">Jumlah Berat <span class="text-rose-500">*</span></label>
-                        <input
-                            type="text"
-                            id="add-hutang-berat"
-                            name="jumlah_berat"
-                            required
-                            class="modal-input"
-                            placeholder="Contoh: 250 Kg"
-                        >
-                    </div>
-                </div>
-
-                <!-- Baris 2 Kolom: Harga Satuan & Jumlah Hutang -->
-                <div class="modal-form-grid-2">
-                    <div class="modal-form-group">
-                        <label class="modal-label" for="add-hutang-harga">Harga Satuan Per Kantong (Rp) <span class="text-rose-500">*</span></label>
-                        <input
-                            type="text"
-                            id="add-hutang-harga"
-                            name="harga"
-                            required
-                            class="modal-input font-semibold"
-                            placeholder="Contoh: Rp 150.000"
-                            oninput="formatInputRupiah(this); autoCalcTotalHutang('add')"
-                        >
-                        <p class="modal-helper-text">Harga per satuan kantong.</p>
-                    </div>
-
-                    <div class="modal-form-group">
-                        <label class="modal-label" for="add-hutang-jumlah">Jumlah Hutang (Rp) <span class="text-rose-500">*</span></label>
+                        <label class="modal-label" for="add-hutang-jumlah">Jumlah Hutang Total (Rp) <span class="text-rose-500">*</span></label>
                         <input
                             type="text"
                             id="add-hutang-jumlah"
                             name="jumlah_hutang"
                             required
-                            class="modal-input font-bold text-blue-900 bg-blue-50/50"
-                            placeholder="Rp 0"
-                            oninput="formatInputRupiah(this)"
+                            readonly
+                            class="modal-input font-bold text-blue-900 bg-blue-50/60"
+                            value="Rp 0"
                         >
-                        <p class="modal-helper-text">Total: Karung × Harga.</p>
+                        <p class="modal-helper-text">Otomatis dijumlahkan dari subtotal semua item pupuk.</p>
                     </div>
-                </div>
 
-                <!-- Baris 2 Kolom: Sisa Hutang & Status -->
-                <div class="modal-form-grid-2">
                     <div class="modal-form-group">
                         <label class="modal-label" for="add-hutang-sisa">Sisa Hutang (Rp) <span class="text-rose-500">*</span></label>
                         <input
@@ -133,7 +89,10 @@
                         >
                         <p class="modal-helper-text">Rp 0 jika Lunas.</p>
                     </div>
+                </div>
 
+                <!-- Baris 3 Kolom: Status, Tanggal Pinjam & Keterangan -->
+                <div class="modal-form-grid-2">
                     <div class="modal-form-group">
                         <label class="modal-label" for="add-hutang-status">Status <span class="text-rose-500">*</span></label>
                         <select id="add-hutang-status" name="status" required class="modal-input" onchange="onStatusHutangChange('add')">
@@ -141,10 +100,7 @@
                             <option value="Lunas">Lunas</option>
                         </select>
                     </div>
-                </div>
 
-                <!-- Baris 2 Kolom: Tanggal Pinjam & Keterangan -->
-                <div class="modal-form-grid-2">
                     <div class="modal-form-group">
                         <label class="modal-label" for="add-hutang-tanggal">Tanggal Pinjam <span class="text-rose-500">*</span></label>
                         <input
@@ -156,17 +112,17 @@
                             value="<?= date('Y-m-d') ?>"
                         >
                     </div>
+                </div>
 
-                    <div class="modal-form-group">
-                        <label class="modal-label" for="add-hutang-keterangan">Keterangan</label>
-                        <input
-                            type="text"
-                            id="add-hutang-keterangan"
-                            name="keterangan"
-                            class="modal-input"
-                            placeholder="Contoh: Pinjaman MT 1"
-                        >
-                    </div>
+                <div class="modal-form-group mb-0">
+                    <label class="modal-label" for="add-hutang-keterangan">Keterangan</label>
+                    <input
+                        type="text"
+                        id="add-hutang-keterangan"
+                        name="keterangan"
+                        class="modal-input"
+                        placeholder="Contoh: Pinjaman MT 1"
+                    >
                 </div>
             </div>
 
@@ -182,7 +138,7 @@
 </div>
 
 <!-- ========================================================
-     MODAL 5: EDIT HUTANG PIUTANG PUPUK
+     MODAL 5: EDIT HUTANG PIUTANG PUPUK (MULTI-ITEM)
 ======================================================== -->
 <div id="modalEditHutang" class="custom-modal-backdrop" role="dialog" aria-modal="true">
     <div class="custom-modal-dialog modal-hutang-dialog">
@@ -196,9 +152,9 @@
             </button>
         </div>
 
-        <form action="<?= appUrl('pupuk/?view=' . urlencode($activeView === 'kelola' ? 'hutang' : $activeView)) ?>" method="POST" id="formEditHutang" novalidate>
+        <form action="<?= $hutangFormAction ?>" method="POST" id="formEditHutang" novalidate>
             <input type="hidden" name="action" value="edit_hutang">
-            <input type="hidden" name="return_view" value="<?= htmlspecialchars($activeView === 'kelola' ? 'hutang' : $activeView) ?>">
+            <input type="hidden" name="return_view" value="<?= htmlspecialchars($hutangReturnView) ?>">
             <input type="hidden" id="edit-hutang-id" name="id" value="">
 
             <div class="custom-modal-body">
@@ -225,83 +181,37 @@
                     </select>
                 </div>
 
-                <div class="modal-form-group">
-                    <label class="modal-label" for="edit-hutang-pupuk">Nama Pupuk (Dari Stok Pupuk) <span class="text-rose-500">*</span></label>
-                    <select id="edit-hutang-pupuk" name="pengelolaan_pupuk_id" required class="modal-input" onchange="onPupukHutangChange('edit')">
-                        <option value="" data-karung="0" data-berat="0" data-bpk="50">-- Pilih Pupuk --</option>
-                        <?php foreach ($pupukList as $pk): ?>
-                            <option
-                                value="<?= (int)$pk['id'] ?>"
-                                data-karung="<?= (int)$pk['karung_num'] ?>"
-                                data-berat="<?= (float)$pk['berat_num'] ?>"
-                                data-bpk="<?= (float)$pk['berat_per_karung'] ?>"
-                            >
-                                <?= htmlspecialchars($pk['nama_pupuk']) ?> (Sisa Gudang: <?= htmlspecialchars($pk['jumlah_karung']) ?> / <?= htmlspecialchars($pk['jumlah_berat']) ?>)
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                    <p class="modal-helper-text">Perubahan jumlah karung otomatis menyesuaikan data pada Stok Pupuk.</p>
+                <!-- Daftar Item Pupuk Dinamis -->
+                <div class="hutang-items-section">
+                    <div class="hutang-items-header">
+                        <div>
+                            <span class="modal-label mb-0">Daftar Item Pupuk <span class="text-rose-500">*</span></span>
+                            <p class="modal-helper-text mt-0.5">Perubahan item &amp; jumlah karung otomatis menyesuaikan data pada Stok Pupuk.</p>
+                        </div>
+                        <button type="button" class="btn-add-hutang-item" onclick="addHutangItemRow('edit')">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>Tambah Item Pupuk</span>
+                        </button>
+                    </div>
+                    <div id="edit-hutang-items-container" class="hutang-items-container"></div>
                 </div>
 
-                <!-- Baris 2 Kolom: Jumlah Karung & Jumlah Berat -->
+                <!-- Baris 2 Kolom: Jumlah Hutang Total & Sisa Hutang -->
                 <div class="modal-form-grid-2">
                     <div class="modal-form-group">
-                        <label class="modal-label" for="edit-hutang-karung">Jumlah Karung <span class="text-rose-500">*</span></label>
-                        <input
-                            type="text"
-                            id="edit-hutang-karung"
-                            name="jumlah_karung"
-                            required
-                            class="modal-input"
-                            oninput="autoCalcBeratHutang('edit'); autoCalcTotalHutang('edit')"
-                        >
-                    </div>
-
-                    <div class="modal-form-group">
-                        <label class="modal-label" for="edit-hutang-berat">Jumlah Berat <span class="text-rose-500">*</span></label>
-                        <input
-                            type="text"
-                            id="edit-hutang-berat"
-                            name="jumlah_berat"
-                            required
-                            class="modal-input"
-                        >
-                    </div>
-                </div>
-
-                <!-- Baris 2 Kolom: Harga Satuan & Jumlah Hutang -->
-                <div class="modal-form-grid-2">
-                    <div class="modal-form-group">
-                        <label class="modal-label" for="edit-hutang-harga">Harga Satuan Per Kantong (Rp) <span class="text-rose-500">*</span></label>
-                        <input
-                            type="text"
-                            id="edit-hutang-harga"
-                            name="harga"
-                            required
-                            class="modal-input font-semibold"
-                            placeholder="Contoh: Rp 150.000"
-                            oninput="formatInputRupiah(this); autoCalcTotalHutang('edit')"
-                        >
-                        <p class="modal-helper-text">Harga per satuan kantong.</p>
-                    </div>
-
-                    <div class="modal-form-group">
-                        <label class="modal-label" for="edit-hutang-jumlah">Jumlah Hutang (Rp) <span class="text-rose-500">*</span></label>
+                        <label class="modal-label" for="edit-hutang-jumlah">Jumlah Hutang Total (Rp) <span class="text-rose-500">*</span></label>
                         <input
                             type="text"
                             id="edit-hutang-jumlah"
                             name="jumlah_hutang"
                             required
-                            class="modal-input font-bold text-blue-900 bg-blue-50/50"
-                            placeholder="Rp 0"
-                            oninput="formatInputRupiah(this)"
+                            readonly
+                            class="modal-input font-bold text-blue-900 bg-blue-50/60"
+                            value="Rp 0"
                         >
-                        <p class="modal-helper-text">Total: Karung × Harga.</p>
+                        <p class="modal-helper-text">Otomatis dijumlahkan dari subtotal semua item pupuk.</p>
                     </div>
-                </div>
 
-                <!-- Baris 2 Kolom: Sisa Hutang & Status -->
-                <div class="modal-form-grid-2">
                     <div class="modal-form-group">
                         <label class="modal-label" for="edit-hutang-sisa">Sisa Hutang (Rp) <span class="text-rose-500">*</span></label>
                         <input
@@ -315,7 +225,10 @@
                         >
                         <p class="modal-helper-text">Rp 0 jika Lunas.</p>
                     </div>
+                </div>
 
+                <!-- Baris 2 Kolom: Status & Tanggal Pinjam -->
+                <div class="modal-form-grid-2">
                     <div class="modal-form-group">
                         <label class="modal-label" for="edit-hutang-status">Status <span class="text-rose-500">*</span></label>
                         <select id="edit-hutang-status" name="status" required class="modal-input" onchange="onStatusHutangChange('edit')">
@@ -323,10 +236,7 @@
                             <option value="Lunas">Lunas</option>
                         </select>
                     </div>
-                </div>
 
-                <!-- Baris 2 Kolom: Tanggal Pinjam & Keterangan -->
-                <div class="modal-form-grid-2">
                     <div class="modal-form-group">
                         <label class="modal-label" for="edit-hutang-tanggal">Tanggal Pinjam <span class="text-rose-500">*</span></label>
                         <input
@@ -337,16 +247,16 @@
                             class="modal-input"
                         >
                     </div>
+                </div>
 
-                    <div class="modal-form-group">
-                        <label class="modal-label" for="edit-hutang-keterangan">Keterangan</label>
-                        <input
-                            type="text"
-                            id="edit-hutang-keterangan"
-                            name="keterangan"
-                            class="modal-input"
-                        >
-                    </div>
+                <div class="modal-form-group mb-0">
+                    <label class="modal-label" for="edit-hutang-keterangan">Keterangan</label>
+                    <input
+                        type="text"
+                        id="edit-hutang-keterangan"
+                        name="keterangan"
+                        class="modal-input"
+                    >
                 </div>
             </div>
 
@@ -376,9 +286,9 @@
             </button>
         </div>
 
-        <form action="<?= appUrl('pupuk/?view=' . urlencode($activeView === 'kelola' ? 'hutang' : $activeView)) ?>" method="POST">
+        <form action="<?= $hutangFormAction ?>" method="POST">
             <input type="hidden" name="action" value="delete_hutang">
-            <input type="hidden" name="return_view" value="<?= htmlspecialchars($activeView === 'kelola' ? 'hutang' : $activeView) ?>">
+            <input type="hidden" name="return_view" value="<?= htmlspecialchars($hutangReturnView) ?>">
             <input type="hidden" id="delete-hutang-id" name="id" value="">
 
             <div class="custom-modal-body text-center py-5">
@@ -392,7 +302,7 @@
                 </p>
                 <p class="text-xs text-emerald-700 bg-emerald-50 p-2.5 rounded-lg border border-emerald-200 mb-2">
                     <i class="fa-solid fa-arrows-rotate mr-1"></i>
-                    Jumlah karung akan <b>otomatis dikembalikan</b> ke data Stok Pupuk.
+                    Seluruh stok karung item pada transaksi ini akan <b>otomatis dikembalikan</b> ke data Stok Pupuk.
                 </p>
                 <p class="text-xs text-rose-600 bg-rose-50 p-2 rounded-lg border border-rose-200">
                     Apakah Anda yakin ingin menghapus data hutang ini?

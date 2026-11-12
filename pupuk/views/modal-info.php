@@ -26,20 +26,8 @@
                 <div id="info-hutang-status-wrap"></div>
             </div>
 
-            <!-- Grid Detail Pinjaman Pupuk -->
+            <!-- Grid Metadata Pinjaman -->
             <div class="info-hutang-detail-grid">
-                <div class="info-detail-item">
-                    <span class="info-detail-label">Nama Pupuk</span>
-                    <strong class="info-detail-val" id="info-hutang-pupuk">-</strong>
-                </div>
-                <div class="info-detail-item">
-                    <span class="info-detail-label">Kuantitas Pinjam</span>
-                    <strong class="info-detail-val" id="info-hutang-kuantitas">-</strong>
-                </div>
-                <div class="info-detail-item">
-                    <span class="info-detail-label">Harga Satuan</span>
-                    <strong class="info-detail-val" id="info-hutang-harga">Rp 0</strong>
-                </div>
                 <div class="info-detail-item">
                     <span class="info-detail-label">Tanggal Pinjam</span>
                     <strong class="info-detail-val" id="info-hutang-tgl-pinjam">-</strong>
@@ -51,6 +39,36 @@
                 <div class="info-detail-item">
                     <span class="info-detail-label">Keterangan Pinjaman</span>
                     <strong class="info-detail-val" id="info-hutang-keterangan">-</strong>
+                </div>
+            </div>
+
+            <!-- Tabel Rincian Item Pupuk -->
+            <div class="info-riwayat-section mb-4">
+                <div class="info-riwayat-header">
+                    <h6>
+                        <i class="fa-solid fa-flask-vial text-agro-600"></i>
+                        Rincian Item Pupuk
+                    </h6>
+                    <span class="info-riwayat-count" id="info-items-badge">0 Item</span>
+                </div>
+                <div class="info-riwayat-table-wrap">
+                    <table class="info-riwayat-table">
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Nama Pupuk</th>
+                                <th>Jumlah Karung</th>
+                                <th>Jumlah Berat</th>
+                                <th>Harga Satuan</th>
+                                <th>Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody id="info-items-tbody">
+                            <tr>
+                                <td colspan="6" class="info-riwayat-empty">Tidak ada rincian item pupuk.</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 

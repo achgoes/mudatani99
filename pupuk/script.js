@@ -134,6 +134,216 @@ function openModalDeletePupuk(id, nama, karung) {
     if (modal) modal.classList.add('show');
 }
 
+function parseFirstNum(val) {
+    const match = String(val ?? '').trim().match(/([0-9]+([.,][0-9]+)?)/);
+    if (!match) return 0;
+    const num = parseFloat(match[1].replace(',', '.'));
+    return Number.isFinite(num) ? num : 0;
+}
+
+function parseRupiahNum(val) {
+    const clean = String(val ?? '').replace(/[^0-9]/g, '');
+    if (!clean) return 0;
+    const num = parseInt(clean, 10);
+    return Number.isFinite(num) ? num : 0;
+}
+
+function formatRupiahNum(num) {
+    return 'Rp ' + new Intl.NumberFormat('id-ID').format(Math.max(0, Math.round(num || 0)));
+}
+
+function buildPupukOptionsHtml(selectedId = '') {
+    const list = (typeof PUPUK_STOK_LIST !== 'undefined' && Array.isArray(PUPUK_STOK_LIST)) ? PUPUK_STOK_LIST : [];
+    const selStr = String(selectedId || '');
+    let html = '<option value="" data-karung="0" data-berat="0" data-bpk="50">-- Pilih Pupuk --</option>';
+    list.forEach(pk => {
+        const pkId = String(pk.id || '');
+        const selectedAttr = (selStr !== '' && pkId === selStr) ? ' selected' : '';
+        const bpk = pk.berat_per_karung ?? 50;
+        html += `<option value="${escapeHtmlStr(pkId)}" data-karung="${escapeHtmlStr(pk.karung_num ?? 0)}" data-berat="${escapeHtmlStr(pk.berat_num ?? 0)}" data-bpk="${escapeHtmlStr(bpk)}"${selectedAttr}>${escapeHtmlStr(pk.nama_pupuk || '')} (Tersedia: ${escapeHtmlStr(pk.jumlah_karung || '0 Karung')} / ${escapeHtmlStr(pk.jumlah_berat || '0 Kg')})</option>`;
+    });
+    return html;
+}
+
+function refreshHutangItemRowLabels(mode) {
+    const container = document.getElementById(`${mode}-hutang-items-container`);
+    if (!container) return;
+    const rows = container.querySelectorAll('.hutang-item-row');
+    rows.forEach((row, idx) => {
+        const titleEl = row.querySelector('.hutang-item-row-title');
+        if (titleEl) titleEl.textContent = `Item Pupuk #${idx + 1}`;
+        const removeBtn = row.querySelector('.btn-remove-hutang-item');
+        if (removeBtn) {
+            const disableRemove = rows.length <= 1;
+            removeBtn.disabled = disableRemove;
+            removeBtn.classList.toggle('opacity-40', disableRemove);
+            removeBtn.classList.toggle('cursor-not-allowed', disableRemove);
+        }
+    });
+}
+
+function autoCalcBeratItemRow(row) {
+    if (!row) return;
+    const sel = row.querySelector('.hutang-item-pupuk');
+    const karungInput = row.querySelector('.hutang-item-karung');
+    const beratInput = row.querySelector('.hutang-item-berat');
+    if (!sel || !karungInput || !beratInput) return;
+
+    const selectedOpt = sel.options[sel.selectedIndex];
+    if (!selectedOpt || !selectedOpt.value) return;
+
+    const bpk = parseFloat(selectedOpt.getAttribute('data-bpk') || '50');
+    const kNum = parseFirstNum(karungInput.value);
+    if (kNum > 0) {
+        const totalKg = Math.round(kNum * bpk * 100) / 100;
+        beratInput.value = `${totalKg} Kg`;
+    }
+}
+
+function recalcAllHutangTotals(mode) {
+    const container = document.getElementById(`${mode}-hutang-items-container`);
+    const jumlahInput = document.getElementById(`${mode}-hutang-jumlah`);
+    const sisaInput = document.getElementById(`${mode}-hutang-sisa`);
+    const statusSel = document.getElementById(`${mode}-hutang-status`);
+    if (!container || !jumlahInput) return;
+
+    let grandTotal = 0;
+    container.querySelectorAll('.hutang-item-row').forEach(row => {
+        const karungInput = row.querySelector('.hutang-item-karung');
+        const hargaInput = row.querySelector('.hutang-item-harga');
+        const subInput = row.querySelector('.hutang-item-subtotal');
+
+        const kNum = karungInput ? parseFirstNum(karungInput.value) : 0;
+        const hNum = hargaInput ? parseRupiahNum(hargaInput.value) : 0;
+        const sub = Math.round(kNum * hNum);
+        grandTotal += sub;
+
+        if (subInput) {
+            subInput.value = formatRupiahNum(sub);
+        }
+    });
+
+    const formattedTotal = formatRupiahNum(grandTotal);
+    jumlahInput.value = formattedTotal;
+
+    if (sisaInput) {
+        if (statusSel && statusSel.value === 'Lunas') {
+            sisaInput.value = 'Rp 0';
+        } else if (mode === 'add' || sisaInput.dataset.syncWithTotal === '1' || sisaInput.value === '' || sisaInput.value === 'Rp 0') {
+            sisaInput.value = formattedTotal;
+        }
+    }
+}
+
+function removeHutangItemRow(btn, mode) {
+    const container = document.getElementById(`${mode}-hutang-items-container`);
+    if (!container) return;
+    const rows = container.querySelectorAll('.hutang-item-row');
+    if (rows.length <= 1) return;
+
+    const row = btn.closest('.hutang-item-row');
+    if (row) {
+        row.remove();
+        refreshHutangItemRowLabels(mode);
+        recalcAllHutangTotals(mode);
+    }
+}
+
+function addHutangItemRow(mode, itemData = null) {
+    const container = document.getElementById(`${mode}-hutang-items-container`);
+    if (!container) return;
+
+    const row = document.createElement('div');
+    row.className = 'hutang-item-row';
+
+    const selectedPupukId = itemData && itemData.pengelolaan_pupuk_id ? itemData.pengelolaan_pupuk_id : '';
+    const karungVal = itemData && itemData.jumlah_karung ? itemData.jumlah_karung : '';
+    const beratVal = itemData && itemData.jumlah_berat ? itemData.jumlah_berat : '';
+    const hargaVal = itemData && itemData.harga && itemData.harga !== 'Rp 0' ? itemData.harga : '';
+
+    row.innerHTML = `
+        <div class="hutang-item-row-head">
+            <span class="hutang-item-row-title">Item Pupuk</span>
+            <button type="button" class="btn-remove-hutang-item" title="Hapus item pupuk ini">
+                <i class="fa-solid fa-trash-can"></i>
+                <span>Hapus</span>
+            </button>
+        </div>
+        <div class="modal-form-group mb-2.5">
+            <label class="modal-label">Nama Pupuk (Dari Stok Pupuk) <span class="text-rose-500">*</span></label>
+            <select name="item_pengelolaan_pupuk_id[]" required class="modal-input hutang-item-pupuk">
+                ${buildPupukOptionsHtml(selectedPupukId)}
+            </select>
+        </div>
+        <div class="hutang-item-fields-grid">
+            <div class="modal-form-group mb-0">
+                <label class="modal-label">Jumlah Karung <span class="text-rose-500">*</span></label>
+                <input type="text" name="item_jumlah_karung[]" required class="modal-input hutang-item-karung" placeholder="Contoh: 5 Karung" value="${escapeHtmlStr(karungVal)}">
+            </div>
+            <div class="modal-form-group mb-0">
+                <label class="modal-label">Jumlah Berat <span class="text-rose-500">*</span></label>
+                <input type="text" name="item_jumlah_berat[]" required class="modal-input hutang-item-berat" placeholder="Contoh: 250 Kg" value="${escapeHtmlStr(beratVal)}">
+            </div>
+            <div class="modal-form-group mb-0">
+                <label class="modal-label">Harga Per Item (Rp) <span class="text-rose-500">*</span></label>
+                <input type="text" name="item_harga[]" required class="modal-input font-semibold hutang-item-harga" placeholder="Contoh: Rp 150.000" value="${escapeHtmlStr(hargaVal)}">
+            </div>
+            <div class="modal-form-group mb-0">
+                <label class="modal-label">Subtotal Item</label>
+                <input type="text" readonly class="modal-input font-bold text-blue-900 bg-blue-50/50 hutang-item-subtotal" value="Rp 0">
+            </div>
+        </div>
+    `;
+
+    container.appendChild(row);
+
+    const selEl = row.querySelector('.hutang-item-pupuk');
+    const karungEl = row.querySelector('.hutang-item-karung');
+    const beratEl = row.querySelector('.hutang-item-berat');
+    const hargaEl = row.querySelector('.hutang-item-harga');
+    const removeBtn = row.querySelector('.btn-remove-hutang-item');
+
+    const clearRowError = (el) => {
+        el.classList.remove('input-error');
+        const form = container.closest('form');
+        const alertBox = document.getElementById(`${mode}-hutang-alert`);
+        if (form && alertBox && !form.querySelector('.modal-input.input-error')) {
+            alertBox.classList.add('hidden');
+        }
+    };
+
+    if (selEl) {
+        selEl.addEventListener('change', () => {
+            clearRowError(selEl);
+            autoCalcBeratItemRow(row);
+            recalcAllHutangTotals(mode);
+        });
+    }
+    if (karungEl) {
+        karungEl.addEventListener('input', () => {
+            clearRowError(karungEl);
+            autoCalcBeratItemRow(row);
+            recalcAllHutangTotals(mode);
+        });
+    }
+    if (beratEl) {
+        beratEl.addEventListener('input', () => clearRowError(beratEl));
+    }
+    if (hargaEl) {
+        hargaEl.addEventListener('input', () => {
+            clearRowError(hargaEl);
+            formatInputRupiah(hargaEl);
+            recalcAllHutangTotals(mode);
+        });
+    }
+    if (removeBtn) {
+        removeBtn.addEventListener('click', () => removeHutangItemRow(removeBtn, mode));
+    }
+
+    refreshHutangItemRowLabels(mode);
+    recalcAllHutangTotals(mode);
+}
+
 function openModalTambahHutang() {
     const modal = document.getElementById('modalTambahHutang');
     if (modal) {
@@ -145,10 +355,12 @@ function openModalTambahHutang() {
         const alertBox = document.getElementById('add-hutang-alert');
         if (alertBox) alertBox.classList.add('hidden');
 
+        const container = document.getElementById('add-hutang-items-container');
+        if (container) container.innerHTML = '';
+        addHutangItemRow('add');
+
         const tglInput = document.getElementById('add-hutang-tanggal');
         if (tglInput) tglInput.value = new Date().toISOString().split('T')[0];
-        const hrgInput = document.getElementById('add-hutang-harga');
-        if (hrgInput) hrgInput.value = '';
         const jmlInput = document.getElementById('add-hutang-jumlah');
         if (jmlInput) jmlInput.value = 'Rp 0';
         const sisaInput = document.getElementById('add-hutang-sisa');
@@ -174,31 +386,35 @@ function openModalEditHutang(data) {
         if (alertBox) alertBox.classList.add('hidden');
     }
 
-    document.getElementById('edit-hutang-id').value         = data.id;
-    document.getElementById('edit-hutang-anggota').value    = data.anggota_id || '';
-    document.getElementById('edit-hutang-karung').value     = data.jumlah_karung || '';
-    document.getElementById('edit-hutang-berat').value      = data.jumlah_berat || '';
-    document.getElementById('edit-hutang-harga').value      = data.harga || 'Rp 0';
-    document.getElementById('edit-hutang-jumlah').value     = data.jumlah_hutang || 'Rp 0';
+    document.getElementById('edit-hutang-id').value      = data.id;
+    document.getElementById('edit-hutang-anggota').value = data.anggota_id || '';
+    document.getElementById('edit-hutang-jumlah').value  = data.jumlah_hutang || 'Rp 0';
+
     const editSisaInput = document.getElementById('edit-hutang-sisa');
     const resolvedSisa  = data.sisa_hutang || (data.status === 'Lunas' ? 'Rp 0' : (data.jumlah_hutang || 'Rp 0'));
     editSisaInput.value = resolvedSisa;
-    const jmlNum  = parseInt(String(data.jumlah_hutang || '0').replace(/[^0-9]/g, ''), 10) || 0;
-    const sisaNum = parseInt(String(resolvedSisa || '0').replace(/[^0-9]/g, ''), 10) || 0;
+    const jmlNum  = parseRupiahNum(data.jumlah_hutang);
+    const sisaNum = parseRupiahNum(resolvedSisa);
     editSisaInput.dataset.syncWithTotal = (data.status !== 'Lunas' && (sisaNum === jmlNum || sisaNum === 0)) ? '1' : '0';
-    document.getElementById('edit-hutang-tanggal').value    = (data.tanggal && data.tanggal.length >= 10 && data.tanggal !== '0000-00-00')
+
+    document.getElementById('edit-hutang-tanggal').value = (data.tanggal && data.tanggal.length >= 10 && data.tanggal !== '0000-00-00')
         ? data.tanggal.substring(0, 10)
         : new Date().toISOString().split('T')[0];
     document.getElementById('edit-hutang-keterangan').value = data.keterangan || '';
     document.getElementById('edit-hutang-status').value     = data.status || 'Belum Lunas';
 
-    const pupukSel = document.getElementById('edit-hutang-pupuk');
-    if (pupukSel) {
-        if (data.pengelolaan_pupuk_id) {
-            pupukSel.value = data.pengelolaan_pupuk_id;
-        } else {
-            pupukSel.value = '';
-        }
+    const container = document.getElementById('edit-hutang-items-container');
+    if (container) {
+        container.innerHTML = '';
+        const items = (Array.isArray(data.items) && data.items.length > 0)
+            ? data.items
+            : [{
+                pengelolaan_pupuk_id: data.pengelolaan_pupuk_id || '',
+                jumlah_karung: data.jumlah_karung || '',
+                jumlah_berat: data.jumlah_berat || '',
+                harga: data.harga || '',
+            }];
+        items.forEach(item => addHutangItemRow('edit', item));
     }
 
     if (modal) modal.classList.add('show');
@@ -217,8 +433,13 @@ function validateHutangForm(formId, mode = 'add') {
     const missingFields = [];
     let firstInvalidEl = null;
 
-    function checkField(id, label, checkMode = false) {
-        const el = document.getElementById(id);
+    function markInvalid(el, label) {
+        if (el) el.classList.add('input-error');
+        missingFields.push(label);
+        if (!firstInvalidEl && el) firstInvalidEl = el;
+    }
+
+    function checkElement(el, label, checkMode = false) {
         if (!el) return;
         const val = el.value.trim();
         let isInvalid = false;
@@ -226,45 +447,45 @@ function validateHutangForm(formId, mode = 'add') {
         if (val === '') {
             isInvalid = true;
         } else if (checkMode === 'rupiah') {
-            const num = parseInt(val.replace(/[^0-9]/g, ''), 10);
-            if (isNaN(num) || num <= 0) {
-                isInvalid = true;
-            }
+            if (parseRupiahNum(val) <= 0) isInvalid = true;
         } else if (checkMode) {
-            const num = parseFloat(val.replace(/[^0-9.,]/g, '').replace(',', '.'));
-            if (isNaN(num) || num <= 0) {
-                isInvalid = true;
-            }
+            if (parseFirstNum(val) <= 0) isInvalid = true;
         }
 
-        if (isInvalid) {
-            el.classList.add('input-error');
-            missingFields.push(label);
-            if (!firstInvalidEl) firstInvalidEl = el;
-        }
+        if (isInvalid) markInvalid(el, label);
     }
 
     const statusVal = document.getElementById(`${mode}-hutang-status`)?.value || 'Belum Lunas';
 
-    checkField(`${mode}-hutang-anggota`, 'Nama Petani');
-    checkField(`${mode}-hutang-pupuk`, 'Nama Pupuk');
-    checkField(`${mode}-hutang-karung`, 'Jumlah Karung (> 0)', true);
-    checkField(`${mode}-hutang-berat`, 'Jumlah Berat (> 0)', true);
-    checkField(`${mode}-hutang-harga`, 'Harga Satuan (> 0)', 'rupiah');
-    checkField(`${mode}-hutang-jumlah`, 'Jumlah Hutang (> 0)', 'rupiah');
-    checkField(`${mode}-hutang-sisa`, statusVal === 'Lunas' ? 'Sisa Hutang' : 'Sisa Hutang (> 0)', statusVal === 'Lunas' ? false : 'rupiah');
-    checkField(`${mode}-hutang-tanggal`, 'Tanggal Pinjam');
-    checkField(`${mode}-hutang-status`, 'Status');
+    checkElement(document.getElementById(`${mode}-hutang-anggota`), 'Nama Petani');
+
+    const rows = form.querySelectorAll(`#${mode}-hutang-items-container .hutang-item-row`);
+    if (rows.length === 0) {
+        missingFields.push('Minimal 1 Item Pupuk');
+    } else {
+        rows.forEach((row, idx) => {
+            const no = idx + 1;
+            checkElement(row.querySelector('.hutang-item-pupuk'), `Item #${no} Nama Pupuk`);
+            checkElement(row.querySelector('.hutang-item-karung'), `Item #${no} Jumlah Karung (> 0)`, true);
+            checkElement(row.querySelector('.hutang-item-berat'), `Item #${no} Jumlah Berat (> 0)`, true);
+            checkElement(row.querySelector('.hutang-item-harga'), `Item #${no} Harga Satuan (> 0)`, 'rupiah');
+        });
+    }
+
+    checkElement(document.getElementById(`${mode}-hutang-jumlah`), 'Jumlah Hutang (> 0)', 'rupiah');
+    checkElement(document.getElementById(`${mode}-hutang-sisa`), statusVal === 'Lunas' ? 'Sisa Hutang' : 'Sisa Hutang (> 0)', statusVal === 'Lunas' ? false : 'rupiah');
+    checkElement(document.getElementById(`${mode}-hutang-tanggal`), 'Tanggal Pinjam');
+    checkElement(document.getElementById(`${mode}-hutang-status`), 'Status');
 
     if (missingFields.length > 0) {
         if (alertBox && alertText) {
-            alertText.innerHTML = `<strong>Peringatan!</strong> Kolom berikut belum diisi dengan benar: <span class="font-semibold text-rose-900 underline">${missingFields.join(', ')}</span>. Harap lengkapi sebelum menyimpan.`;
+            alertText.innerHTML = `<strong>Peringatan!</strong> Kolom berikut belum diisi dengan benar: <span class="font-semibold text-rose-900 underline">${escapeHtmlStr(missingFields.join(', '))}</span>. Harap lengkapi sebelum menyimpan.`;
             alertBox.classList.remove('hidden');
         }
 
         showToast(
             'Kolom Belum Lengkap!',
-            `Terdapat ${missingFields.length} kolom wajib yang belum diisi: ${missingFields.join(', ')}.`,
+            `Terdapat ${missingFields.length} kolom wajib yang belum diisi dengan benar.`,
             'danger',
             3200
         );
@@ -314,34 +535,6 @@ function openModalBayarHutang(data) {
     }
 }
 
-function autoCalcTotalHutang(mode) {
-    const karungInput = document.getElementById(`${mode}-hutang-karung`);
-    const hargaInput  = document.getElementById(`${mode}-hutang-harga`);
-    const jumlahInput = document.getElementById(`${mode}-hutang-jumlah`);
-    const sisaInput   = document.getElementById(`${mode}-hutang-sisa`);
-    const statusSel   = document.getElementById(`${mode}-hutang-status`);
-    if (!karungInput || !hargaInput || !jumlahInput) return;
-
-    const rawKarung = karungInput.value.trim();
-    const match = rawKarung.match(/([0-9]+([.,][0-9]+)?)/);
-    const kNum = match ? parseFloat(match[1].replace(',', '.')) : 0;
-
-    const rawHarga = hargaInput.value.replace(/[^0-9]/g, '');
-    const hNum = rawHarga ? parseFloat(rawHarga) : 0;
-
-    const total = Math.round(kNum * hNum);
-    const formattedTotal = 'Rp ' + new Intl.NumberFormat('id-ID').format(total);
-    jumlahInput.value = formattedTotal;
-
-    if (sisaInput) {
-        if (statusSel && statusSel.value === 'Lunas') {
-            sisaInput.value = 'Rp 0';
-        } else if (mode === 'add' || sisaInput.dataset.syncWithTotal === '1' || sisaInput.value === '' || sisaInput.value === 'Rp 0') {
-            sisaInput.value = formattedTotal;
-        }
-    }
-}
-
 function onStatusHutangChange(mode) {
     const statusSel   = document.getElementById(`${mode}-hutang-status`);
     const jumlahInput = document.getElementById(`${mode}-hutang-jumlah`);
@@ -375,31 +568,6 @@ function openModalDeleteHutang(id, namaPetani, namaPupuk, jumlahKarung) {
 
     const modal = document.getElementById('modalDeleteHutang');
     if (modal) modal.classList.add('show');
-}
-
-function onPupukHutangChange(mode) {
-    autoCalcBeratHutang(mode);
-}
-
-function autoCalcBeratHutang(mode) {
-    const sel = document.getElementById(`${mode}-hutang-pupuk`);
-    const karungInput = document.getElementById(`${mode}-hutang-karung`);
-    const beratInput  = document.getElementById(`${mode}-hutang-berat`);
-    if (!sel || !karungInput || !beratInput) return;
-
-    const selectedOpt = sel.options[sel.selectedIndex];
-    if (!selectedOpt || !selectedOpt.value) return;
-
-    const bpk = parseFloat(selectedOpt.getAttribute('data-bpk') || '50');
-    const rawKarung = karungInput.value.trim();
-    const match = rawKarung.match(/([0-9]+([.,][0-9]+)?)/);
-    if (match) {
-        const kNum = parseFloat(match[1].replace(',', '.'));
-        if (!isNaN(kNum) && kNum > 0) {
-            const totalKg = Math.round(kNum * bpk * 100) / 100;
-            beratInput.value = `${totalKg} Kg`;
-        }
-    }
 }
 
 function closeModal(modalId) {
@@ -553,15 +721,39 @@ function openModalInfoHutang(hutangId, highlightBayarId = 0) {
             : `<span class="badge-status-hutang badge-status-belum"><i class="fa-solid fa-clock"></i> Belum Lunas</span>`;
     }
 
-    document.getElementById('info-hutang-pupuk').innerText = h.nama_pupuk || '-';
-    document.getElementById('info-hutang-kuantitas').innerText = `${h.jumlah_karung || '0 Karung'} (${h.jumlah_berat || '0 Kg'})`;
-    document.getElementById('info-hutang-harga').innerText = h.harga || 'Rp 0';
     document.getElementById('info-hutang-tgl-pinjam').innerText = formatDateID(h.tanggal || h.created_at);
     document.getElementById('info-hutang-tgl-lunas').innerText = isLunas ? formatDateID(h.tanggal_lunas || h.tanggal) : 'Belum Lunas';
 
     // Bersihkan catatan sistem " | Bayar: ..." agar keterangan asli mudah dibaca
     const rawKet = (h.keterangan || '-').split(' | Bayar:')[0].trim();
     document.getElementById('info-hutang-keterangan').innerText = rawKet || '-';
+
+    const itemsList = (Array.isArray(h.items) && h.items.length > 0)
+        ? h.items
+        : [{
+            nama_pupuk: h.nama_pupuk || '-',
+            jumlah_karung: h.jumlah_karung || '0 Karung',
+            jumlah_berat: h.jumlah_berat || '0 Kg',
+            harga: h.harga || 'Rp 0',
+            subtotal: h.jumlah_hutang || 'Rp 0',
+        }];
+
+    const itemsBadgeEl = document.getElementById('info-items-badge');
+    if (itemsBadgeEl) itemsBadgeEl.innerText = `${itemsList.length} Item`;
+
+    const itemsTbody = document.getElementById('info-items-tbody');
+    if (itemsTbody) {
+        itemsTbody.innerHTML = itemsList.map((it, idx) => `
+            <tr>
+                <td class="font-semibold text-slate-500">${idx + 1}</td>
+                <td><span class="badge-nama-pupuk"><i class="fa-solid fa-flask-vial"></i> ${escapeHtmlStr(it.nama_pupuk || '-')}</span></td>
+                <td><span class="badge-karung-pupuk">${escapeHtmlStr(it.jumlah_karung || '0 Karung')}</span></td>
+                <td><span class="nik-badge">${escapeHtmlStr(it.jumlah_berat || '0 Kg')}</span></td>
+                <td class="font-semibold text-emerald-700">${escapeHtmlStr(it.harga || 'Rp 0')}</td>
+                <td class="font-bold text-blue-800">${escapeHtmlStr(it.subtotal || 'Rp 0')}</td>
+            </tr>
+        `).join('');
+    }
 
     let sumBayar = 0;
     historyList.forEach(item => {

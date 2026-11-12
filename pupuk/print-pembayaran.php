@@ -65,10 +65,26 @@ if ($bayar) {
     $dicatatOleh  = formatTitleCase($bayar['dicatat_oleh'] ?: '-');
     $isLunas      = (($bayar['status'] ?? '') === 'Lunas');
 
-    $kuantitasParts = [];
-    if (!empty($bayar['jumlah_karung'])) $kuantitasParts[] = formatTitleCase($bayar['jumlah_karung']);
-    if (!empty($bayar['jumlah_berat'])) $kuantitasParts[] = formatTitleCase($bayar['jumlah_berat']);
-    $kuantitasStr = !empty($kuantitasParts) ? implode(' / ', $kuantitasParts) : '-';
+    $hutangItems = getHutangItemsByHutangId($conn, (int)$bayar['hutang_id']);
+    if (!empty($hutangItems)) {
+        $itemNames = [];
+        $sumK = 0;
+        $sumB = 0.0;
+        foreach ($hutangItems as $hi) {
+            if (!in_array($hi['nama_pupuk'], $itemNames, true)) {
+                $itemNames[] = $hi['nama_pupuk'];
+            }
+            $sumK += (int)$hi['karung_num'];
+            $sumB += (float)$hi['berat_num'];
+        }
+        $namaPupuk    = implode(', ', $itemNames);
+        $kuantitasStr = formatKarungStr($sumK) . ' / ' . formatBeratStr($sumB);
+    } else {
+        $kuantitasParts = [];
+        if (!empty($bayar['jumlah_karung'])) $kuantitasParts[] = formatTitleCase($bayar['jumlah_karung']);
+        if (!empty($bayar['jumlah_berat'])) $kuantitasParts[] = formatTitleCase($bayar['jumlah_berat']);
+        $kuantitasStr = !empty($kuantitasParts) ? implode(' / ', $kuantitasParts) : '-';
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -422,6 +438,31 @@ if ($bayar) {
                     </div>
                 </div>
             </section>
+
+            <?php if (!empty($hutangItems)): ?>
+            <table class="payment-table" aria-label="Rincian Item Pupuk">
+                <thead>
+                    <tr>
+                        <th style="width: 34%;">Item Pupuk</th>
+                        <th style="width: 16%;">Karung</th>
+                        <th style="width: 16%;">Berat</th>
+                        <th style="width: 17%;">Harga</th>
+                        <th style="width: 17%;">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($hutangItems as $hi): ?>
+                    <tr>
+                        <td><?= htmlspecialchars($hi['nama_pupuk']) ?></td>
+                        <td><?= htmlspecialchars($hi['jumlah_karung']) ?></td>
+                        <td><?= htmlspecialchars($hi['jumlah_berat']) ?></td>
+                        <td><?= htmlspecialchars($hi['harga']) ?></td>
+                        <td><?= htmlspecialchars($hi['subtotal']) ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+            <?php endif; ?>
 
             <table class="payment-table">
                 <tbody>

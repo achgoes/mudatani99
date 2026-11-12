@@ -140,6 +140,7 @@ foreach ($pupukList as $pk) {
 }
 
 // 4. Daftar Hutang Piutang Pupuk
+$hutangItemsGrouped  = getAllHutangItemsGrouped($conn);
 $hutangList          = [];
 $totalKarungHutang   = 0;
 $totalBeratHutang    = 0.0;
@@ -169,22 +170,39 @@ $resHutang = $conn->query("
 ");
 if ($resHutang) {
     while ($row = $resHutang->fetch_assoc()) {
-        $row['nama_petani']   = formatTitleCase($row['nama_petani']);
-        $row['nama_pupuk']    = formatTitleCase($row['nama_pupuk']);
-        $row['jumlah_karung'] = formatTitleCase($row['jumlah_karung']);
-        $row['jumlah_berat']  = formatTitleCase($row['jumlah_berat']);
-        $row['harga']         = formatRupiahStr($row['harga'] ?? 'Rp 0');
+        $hid = (int)$row['id'];
+        $row['nama_petani'] = formatTitleCase($row['nama_petani']);
 
-        $kNum = parseKarungInt($row['jumlah_karung']);
-        $bNum = parseBeratFloat($row['jumlah_berat']);
-        $row['karung_num'] = $kNum;
-        $row['berat_num']  = $bNum;
+        $rowItems = $hutangItemsGrouped[$hid] ?? [];
+        if (empty($rowItems)) {
+            $rowItems = [normalizeHutangItemRow($row)];
+        }
 
-        $hargaNum = parseRupiahFloat($row['harga']);
-        if (empty($row['jumlah_hutang']) || $row['jumlah_hutang'] === 'Rp 0') {
-            $row['jumlah_hutang'] = formatRupiahStr($kNum * $hargaNum);
-        } else {
+        $itemNames   = [];
+        $kNum        = 0;
+        $bNum        = 0.0;
+        $sumSubtotal = 0.0;
+        foreach ($rowItems as $it) {
+            if (!in_array($it['nama_pupuk'], $itemNames, true)) {
+                $itemNames[] = $it['nama_pupuk'];
+            }
+            $kNum        += (int)$it['karung_num'];
+            $bNum        += (float)$it['berat_num'];
+            $sumSubtotal += (float)$it['subtotal_num'];
+        }
+
+        $row['items']         = $rowItems;
+        $row['nama_pupuk']    = implode(', ', $itemNames);
+        $row['jumlah_karung'] = formatKarungStr($kNum);
+        $row['jumlah_berat']  = formatBeratStr($bNum);
+        $row['harga']         = (count($rowItems) === 1) ? $rowItems[0]['harga'] : 'Rp 0';
+        $row['karung_num']    = $kNum;
+        $row['berat_num']     = $bNum;
+
+        if (!empty($row['jumlah_hutang']) && $row['jumlah_hutang'] !== 'Rp 0') {
             $row['jumlah_hutang'] = formatRupiahStr($row['jumlah_hutang']);
+        } else {
+            $row['jumlah_hutang'] = formatRupiahStr($sumSubtotal);
         }
 
         if ($row['status'] === 'Lunas') {
