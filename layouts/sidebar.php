@@ -25,7 +25,12 @@ $sidebarMenu = [
             ['label' => 'Riwayat Hutang / Pelunasan', 'route' => 'pupuk', 'view' => 'riwayat'],
         ]],
         ['type' => 'group', 'label' => 'Inventaris Obat', 'icon' => 'fa-shield-virus', 'submenu' => [
-            ['label' => 'Pengelolaan Obat', 'route' => 'obat', 'view' => null],
+            ['label' => 'Stok Obat', 'route' => 'obat', 'view' => null],
+            ['label' => 'Riwayat Stok Obat', 'route' => 'obat', 'view' => 'riwayat_stok'],
+            ['label' => 'Penjualan', 'route' => 'obat', 'view' => 'penjualan'],
+            ['label' => 'Riwayat Penjualan', 'route' => 'obat', 'view' => 'riwayat_penjualan'],
+            ['label' => 'Hutang Piutang', 'route' => 'obat', 'view' => 'hutang'],
+            ['label' => 'Riwayat Hutang / Pelunasan', 'route' => 'obat', 'view' => 'riwayat'],
         ]],
         ['type' => 'group', 'label' => 'Inventaris Tanaman', 'icon' => 'fa-wheat-awn', 'submenu' => [
             ['label' => 'Pengelolaan Tanaman', 'route' => 'tanaman', 'view' => null],

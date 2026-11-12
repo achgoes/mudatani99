@@ -1,22 +1,69 @@
-<!-- Tabel Pengelolaan Obat -->
+<!-- =========================================================
+     TAMPILAN 1: STOK OBAT
+========================================================= -->
+<div class="user-stats-grid">
+    <div class="user-stat-card">
+        <div class="stat-info">
+            <h5>Total Jenis Obat</h5>
+            <div class="stat-value"><?= count($obatList) ?></div>
+            <div class="stat-desc">Data inventaris tercatat</div>
+        </div>
+        <div class="stat-icon-wrap stat-icon-green">
+            <i class="fa-solid fa-shield-virus"></i>
+        </div>
+    </div>
+
+    <div class="user-stat-card">
+        <div class="stat-info">
+            <h5>Sisa Stok Kemasan</h5>
+            <div class="stat-value"><?= number_format($totalKemasan, 0, ',', '.') ?> <span class="text-sm font-semibold">Pcs / Botol</span></div>
+            <div class="stat-desc">Tersedia di gudang saat ini</div>
+        </div>
+        <div class="stat-icon-wrap stat-icon-amber">
+            <i class="fa-solid fa-prescription-bottle-medical"></i>
+        </div>
+    </div>
+
+    <div class="user-stat-card">
+        <div class="stat-info">
+            <h5>Sisa Jumlah Berat</h5>
+            <div class="stat-value"><?= number_format($totalBerat, 0, ',', '.') ?> <span class="text-sm font-semibold">Kg</span></div>
+            <div class="stat-desc">Akumulasi berat gudang</div>
+        </div>
+        <div class="stat-icon-wrap stat-icon-blue">
+            <i class="fa-solid fa-scale-balanced"></i>
+        </div>
+    </div>
+
+    <div class="user-stat-card">
+        <div class="stat-info">
+            <h5>Terpakai di Hutang</h5>
+            <div class="stat-value"><?= number_format($totalKemasanHutang, 0, ',', '.') ?> <span class="text-sm font-semibold">Kemasan</span></div>
+            <div class="stat-desc"><?= $countBelumLunas ?> Belum Lunas &bull; <?= $countLunas ?> Lunas</div>
+        </div>
+        <div class="stat-icon-wrap stat-icon-rose">
+            <i class="fa-solid fa-hand-holding-dollar"></i>
+        </div>
+    </div>
+</div>
+
+<!-- Tabel Stok Obat -->
 <div class="user-table-card">
     <div class="table-card-header">
         <div class="table-title-group">
-            <h3>Daftar Pengelolaan Obat</h3>
-            <p>Menampilkan <?= count($obatList) ?> data obat (diambil dari Master Obat) beserta jumlah kemasan (Pcs / Botol), jumlah berat, dan keterangan.</p>
+            <h3>Daftar Stok Obat</h3>
+            <p>Menampilkan <?= count($obatList) ?> data stok obat tersedia (diambil dari Master Obat).</p>
         </div>
 
         <div class="table-card-actions">
-            <!-- Pencarian -->
             <div class="search-input-wrap">
                 <i class="fa-solid fa-magnifying-glass"></i>
                 <input type="text" id="obat-search-input" placeholder="Cari nama obat, kemasan, berat, keterangan..." onkeyup="filterObatTable()">
             </div>
 
-            <!-- Tombol Tambah Pengelolaan Obat -->
             <button type="button" class="btn-add-user" onclick="openModalTambahObat()">
                 <i class="fa-solid fa-plus"></i>
-                <span>Tambah Data Obat</span>
+                <span>Tambah Stok Obat</span>
             </button>
         </div>
     </div>
@@ -38,7 +85,7 @@
                 <tr>
                     <td colspan="6" class="table-empty-cell">
                         <i class="fa-solid fa-shield-virus text-3xl mb-2 block"></i>
-                        Belum ada data pengelolaan obat. Silakan klik tombol <b>Tambah Data Obat</b> atau jalankan <code>query.sql</code>.
+                        Belum ada data stok obat. Silakan klik tombol <b>Tambah Stok Obat</b> atau jalankan <code>01-stok-obat.sql</code>.
                     </td>
                 </tr>
                 <?php else: ?>
@@ -79,7 +126,7 @@
                                     type="button"
                                     class="btn-table-edit"
                                     onclick="openModalEditObat(<?= htmlspecialchars(json_encode($row)) ?>)"
-                                    title="Edit Data Obat"
+                                    title="Edit Data Stok Obat"
                                 >
                                     <i class="fa-solid fa-pen-to-square"></i>
                                     <span>Edit</span>
@@ -89,7 +136,7 @@
                                     type="button"
                                     class="btn-table-delete"
                                     onclick="openModalDeleteObat(<?= (int)$row['id'] ?>, '<?= htmlspecialchars(addslashes($row['nama_obat'])) ?>', '<?= htmlspecialchars(addslashes($row['jumlah_kemasan'])) ?>')"
-                                    title="Hapus Data Obat"
+                                    title="Hapus Data Stok Obat"
                                 >
                                     <i class="fa-solid fa-trash-can"></i>
                                 </button>
@@ -102,4 +149,3 @@
         </table>
     </div>
 </div>
-
