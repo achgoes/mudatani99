@@ -41,6 +41,9 @@ $sidebarMenu = [
             ['label' => 'Riwayat Hutang / Pelunasan', 'route' => 'tanaman', 'view' => 'riwayat'],
         ]],
     ]],
+    ['title' => 'Manajemen Setoran Petani', 'items' => [
+        ['type' => 'link', 'label' => 'Setoran Petani', 'icon' => 'fa-scale-balanced', 'route' => 'setoran'],
+    ]],
 ];
 
 $currentView = $_GET['view'] ?? '';

@@ -1,0 +1,516 @@
+/* ==========================================================================
+   mudatani99 - Transaksi Akhir Setoran Petani (transaksi-akhir/style.css)
+   ========================================================================== */
+
+.stat-icon-rose {
+  background: #ffe4e6;
+  color: #e11d48;
+}
+
+.stat-info .stat-value.stat-value-rupiah {
+  font-size: 1.3rem;
+}
+
+/* Filter Rentang Tanggal */
+.ta-date-filter-group {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.ta-date-input {
+  padding: 0.5rem 0.72rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--clr-slate-200);
+  background-color: var(--clr-slate-50);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--clr-slate-700);
+  outline: none;
+  transition: var(--transition-smooth);
+}
+
+.ta-date-input:focus {
+  background-color: #ffffff;
+  border-color: var(--clr-agro-500);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+}
+
+.ta-date-sep {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--clr-slate-500);
+}
+
+.btn-filter-tanggal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.38rem;
+  padding: 0.54rem 0.9rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid #15803d;
+  background-color: #15803d;
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: var(--transition-smooth);
+}
+
+.btn-filter-tanggal:hover {
+  background-color: #166534;
+  border-color: #166534;
+}
+
+.btn-filter-tanggal:focus-visible,
+.btn-table-info:focus-visible,
+.btn-table-print:focus-visible,
+.btn-modal-delete-inside:focus-visible {
+  outline: 2px solid #16a34a;
+  outline-offset: 2px;
+}
+
+/* Badges di Tabel */
+.badge-kode-ta {
+  display: inline-block;
+  margin-top: 0.18rem;
+  padding: 0.16rem 0.5rem;
+  border-radius: 0.4rem;
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+  font-size: 0.7rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.badge-berat-setoran {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.65rem;
+  border-radius: var(--radius-md);
+  background: #eff6ff;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.badge-rapaksi {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.28rem 0.65rem;
+  border-radius: var(--radius-md);
+  background: #fff1f2;
+  color: #be123c;
+  border: 1px solid #fecdd3;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.badge-harga-kg {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.65rem;
+  border-radius: var(--radius-md);
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.badge-jumlah-uang {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.72rem;
+  border-radius: var(--radius-md);
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #6ee7b7;
+  font-size: 0.82rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+/* Tombol Aksi Tabel */
+.btn-table-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.42rem 0.75rem;
+  border-radius: var(--radius-md);
+  background-color: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: var(--transition-smooth);
+}
+
+.btn-table-info:hover {
+  background-color: #2563eb;
+  color: #ffffff;
+  border-color: #2563eb;
+  transform: translateY(-1px);
+}
+
+.btn-table-print {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.42rem 0.75rem;
+  border-radius: var(--radius-md);
+  background-color: #f8fafc;
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: var(--transition-smooth);
+}
+
+.btn-table-print:hover {
+  background-color: #0f172a;
+  color: #ffffff;
+  border-color: #0f172a;
+  transform: translateY(-1px);
+}
+
+/* Modal Form & Info */
+.modal-ta-dialog,
+.modal-info-ta-dialog {
+  max-width: 740px !important;
+  max-height: 90vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.modal-ta-dialog .custom-modal-body,
+.modal-info-ta-dialog .custom-modal-body {
+  overflow-y: auto !important;
+  max-height: calc(90vh - 135px) !important;
+  padding: 1.25rem 1.5rem !important;
+  scrollbar-width: thin;
+  scrollbar-color: var(--clr-slate-300) transparent;
+}
+
+.modal-form-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.ta-setoran-preview {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+  padding: 0.75rem 0.9rem;
+  margin-bottom: 1rem;
+  border-radius: var(--radius-lg);
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+.ta-preview-label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #166534;
+}
+
+.ta-preview-val {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-top: 0.1rem;
+}
+
+.input-unit-group {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.input-unit-group .modal-input {
+  flex: 1;
+}
+
+.unit-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.62rem 0.85rem;
+  border-radius: var(--radius-lg);
+  background: var(--clr-slate-100);
+  border: 1px solid var(--clr-slate-200);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--clr-slate-700);
+  flex-shrink: 0;
+}
+
+.modal-input.input-error {
+  border-color: #f43f5e !important;
+  background-color: #fff1f2 !important;
+  box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.22) !important;
+}
+
+/* Footer Modal Edit dengan Tombol Hapus di Dalamnya */
+.ta-edit-footer {
+  justify-content: space-between !important;
+  flex-wrap: wrap;
+}
+
+.ta-edit-footer-right {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.btn-modal-delete-inside {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1rem;
+  border-radius: var(--radius-lg);
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.btn-modal-delete-inside:hover {
+  background: #dc2626;
+  color: #ffffff;
+  border-color: #dc2626;
+}
+
+/* Info Lanjutan Modal */
+.info-ta-top-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.9rem 1.1rem;
+  border-radius: var(--radius-xl);
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 1rem;
+}
+
+.info-ta-petani-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.info-ta-petani-meta h5 {
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.info-ta-petani-meta p {
+  font-size: 0.76rem;
+  color: #475569;
+  margin: 0.15rem 0 0;
+}
+
+.info-ta-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+}
+
+.info-detail-item {
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--radius-lg);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+}
+
+.info-detail-label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 0.2rem;
+}
+
+.info-detail-val {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.info-ta-calc-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.info-calc-box {
+  padding: 0.65rem 0.75rem;
+  border-radius: var(--radius-lg);
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.info-calc-rapaksi {
+  background: #fff1f2;
+  border-color: #fecdd3;
+}
+
+.info-calc-akhir {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.info-calc-uang {
+  background: #ecfdf5;
+  border-color: #6ee7b7;
+}
+
+.info-calc-val {
+  display: block;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.info-riwayat-section {
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
+.info-riwayat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.info-riwayat-header h6 {
+  font-size: 0.84rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.info-riwayat-count {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.info-riwayat-table-wrap {
+  overflow-x: auto;
+}
+
+.info-riwayat-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+
+.info-riwayat-table th {
+  background: #f1f5f9;
+  color: #334155;
+  font-weight: 700;
+  text-align: left;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.info-riwayat-table td {
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
+  vertical-align: middle;
+}
+
+.info-riwayat-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.info-riwayat-empty {
+  text-align: center;
+  padding: 1.5rem 1rem !important;
+  color: #64748b !important;
+  font-weight: 600;
+}
+
+@media (max-width: 680px) {
+  .ta-date-filter-group {
+    width: 100%;
+  }
+
+  .ta-date-input {
+    flex: 1 1 120px;
+    min-width: 0;
+    min-height: 44px;
+  }
+
+  .btn-filter-tanggal {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .modal-form-grid-2,
+  .ta-setoran-preview,
+  .info-ta-detail-grid,
+  .info-ta-calc-grid {
+    grid-template-columns: 1fr;
+    gap: 0.65rem;
+  }
+
+  .ta-edit-footer {
+    flex-direction: column-reverse;
+    align-items: stretch !important;
+  }
+
+  .ta-edit-footer-right {
+    justify-content: flex-end;
+  }
+
+  .btn-modal-delete-inside,
+  .btn-table-info,
+  .btn-table-print,
+  .btn-table-edit {
+    min-height: 44px;
+  }
+}
