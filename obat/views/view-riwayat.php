@@ -204,9 +204,9 @@
                                     class="btn-table-info"
                                     onclick="openModalInfoHutang(<?= (int)$bp['hutang_id'] ?>, <?= (int)$bp['id'] ?>)"
                                     title="Lihat info lengkap hutang dan seluruh riwayat pembayarannya"
+                                    aria-label="Lihat info lengkap hutang dan seluruh riwayat pembayarannya"
                                 >
-                                    <i class="fa-solid fa-circle-info"></i>
-                                    <span>Info Lengkap</span>
+                                    <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
                                 </button>
                                 <a
                                     href="<?= htmlspecialchars(appUrl('obat/print-pembayaran.php?id=' . (int)$bp['id'])) ?>"
@@ -214,9 +214,9 @@
                                     rel="noopener"
                                     class="btn-table-print"
                                     title="Print bukti pembayaran transaksi ini"
+                                    aria-label="Print bukti pembayaran transaksi ini"
                                 >
-                                    <i class="fa-solid fa-print"></i>
-                                    <span>Print</span>
+                                    <i class="fa-solid fa-print" aria-hidden="true"></i>
                                 </a>
                             </div>
                         </td>

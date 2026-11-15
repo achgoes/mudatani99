@@ -223,9 +223,9 @@
                                     class="btn-table-info"
                                     onclick="openModalInfoPenjualan(<?= (int)$row['id'] ?>)"
                                     title="Lihat detail transaksi penjualan"
+                                    aria-label="Lihat detail transaksi penjualan"
                                 >
-                                    <i class="fa-solid fa-circle-info"></i>
-                                    <span>Info</span>
+                                    <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
                                 </button>
 
                                 <a
@@ -234,9 +234,9 @@
                                     rel="noopener"
                                     class="btn-table-print"
                                     title="Cetak nota penjualan"
+                                    aria-label="Cetak nota penjualan"
                                 >
-                                    <i class="fa-solid fa-print"></i>
-                                    <span>Nota</span>
+                                    <i class="fa-solid fa-print" aria-hidden="true"></i>
                                 </a>
 
                                 <button
@@ -244,9 +244,9 @@
                                     class="btn-table-edit"
                                     onclick="openModalEditPenjualan(<?= htmlspecialchars(json_encode($row)) ?>)"
                                     title="Edit transaksi penjualan"
+                                    aria-label="Edit transaksi penjualan"
                                 >
-                                    <i class="fa-solid fa-pen-to-square"></i>
-                                    <span>Edit</span>
+                                    <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
                                 </button>
 
                                 <button
@@ -254,8 +254,9 @@
                                     class="btn-table-delete"
                                     onclick="openModalDeletePenjualan(<?= (int)$row['id'] ?>, '<?= htmlspecialchars(addslashes($row['kode_transaksi'])) ?>', '<?= htmlspecialchars(addslashes($row['nama_pembeli'])) ?>', '<?= htmlspecialchars(addslashes($row['jumlah_karung'])) ?>')"
                                     title="Hapus transaksi & kembalikan stok pupuk"
+                                    aria-label="Hapus transaksi dan kembalikan stok pupuk"
                                 >
-                                    <i class="fa-solid fa-trash-can"></i>
+                                    <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
                                 </button>
                             </div>
                         </td>

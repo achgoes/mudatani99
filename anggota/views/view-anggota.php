@@ -104,9 +104,9 @@
                                     class="btn-table-edit"
                                     onclick="openModalEditAnggota(<?= htmlspecialchars(json_encode($row)) ?>)"
                                     title="Edit Anggota Petani"
+                                    aria-label="Edit Anggota"
                                 >
-                                    <i class="fa-solid fa-pen-to-square"></i>
-                                    <span>Edit</span>
+                                    <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
                                 </button>
 
                                 <button
@@ -114,8 +114,9 @@
                                     class="btn-table-delete"
                                     onclick="openModalDeleteAnggota(<?= (int)$row['id'] ?>, '<?= htmlspecialchars(addslashes($row['nama_petani'])) ?>')"
                                     title="Hapus Anggota Petani"
+                                    aria-label="Hapus Anggota"
                                 >
-                                    <i class="fa-solid fa-trash-can"></i>
+                                    <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
                                 </button>
                             </div>
                         </td>

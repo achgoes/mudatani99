@@ -127,9 +127,9 @@
                                     class="btn-table-edit"
                                     onclick="openModalEditObat(<?= htmlspecialchars(json_encode($row)) ?>)"
                                     title="Edit Data Stok Obat"
+                                    aria-label="Edit Data Stok Obat"
                                 >
-                                    <i class="fa-solid fa-pen-to-square"></i>
-                                    <span>Edit</span>
+                                    <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
                                 </button>
 
                                 <button
@@ -137,8 +137,9 @@
                                     class="btn-table-delete"
                                     onclick="openModalDeleteObat(<?= (int)$row['id'] ?>, '<?= htmlspecialchars(addslashes($row['nama_obat'])) ?>', '<?= htmlspecialchars(addslashes($row['jumlah_kemasan'])) ?>')"
                                     title="Hapus Data Stok Obat"
+                                    aria-label="Hapus Data Stok Obat"
                                 >
-                                    <i class="fa-solid fa-trash-can"></i>
+                                    <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
                                 </button>
                             </div>
                         </td>

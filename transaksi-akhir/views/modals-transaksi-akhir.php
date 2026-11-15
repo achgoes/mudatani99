@@ -364,12 +364,24 @@ $taFormAction = appUrl('transaksi-akhir/');
                 </div>
             </div>
 
-            <div class="custom-modal-footer">
-                <button type="button" class="btn-modal-cancel" onclick="closeModal('modalEditTransaksiAkhir')">Batal</button>
-                <button type="submit" class="btn-modal-save">
-                    <i class="fa-solid fa-check mr-1"></i>
-                    Simpan Perubahan
+            <div class="custom-modal-footer modal-footer-edit-ta">
+                <button
+                    type="button"
+                    class="btn-modal-delete-inline"
+                    id="btn-edit-delete-ta"
+                    onclick="openDeleteFromEditTransaksiAkhir()"
+                    title="Hapus transaksi akhir ini"
+                >
+                    <i class="fa-solid fa-trash-can mr-1" aria-hidden="true"></i>
+                    Hapus
                 </button>
+                <div class="modal-footer-right-actions">
+                    <button type="button" class="btn-modal-cancel" onclick="closeModal('modalEditTransaksiAkhir')">Batal</button>
+                    <button type="submit" class="btn-modal-save">
+                        <i class="fa-solid fa-check mr-1" aria-hidden="true"></i>
+                        Simpan Perubahan
+                    </button>
+                </div>
             </div>
         </form>
     </div>
@@ -514,15 +526,16 @@ $taFormAction = appUrl('transaksi-akhir/');
                     (Berat Final: <span id="delete-ta-berat" class="font-bold text-emerald-700">-</span>)
                 </p>
                 <p class="text-xs text-rose-600 bg-rose-50 p-2.5 rounded-lg border border-rose-200">
-                    Apakah Anda yakin ingin menghapus data transaksi akhir ini? Tindakan ini tidak dapat dibatalkan.
+                    <i class="fa-solid fa-circle-exclamation me-1" aria-hidden="true"></i>
+                    <strong>Peringatan!</strong> Apakah Anda yakin ingin menghapus data transaksi akhir ini? Tindakan ini tidak dapat dibatalkan.
                 </p>
             </div>
 
             <div class="custom-modal-footer justify-center">
                 <button type="button" class="btn-modal-cancel" onclick="closeModal('modalDeleteTransaksiAkhir')">Batal</button>
                 <button type="submit" class="btn-modal-save bg-rose-600 hover:bg-rose-700 shadow-rose-600/30">
-                    <i class="fa-solid fa-trash-can mr-1"></i>
-                    Ya, Hapus Transaksi
+                    <i class="fa-solid fa-check me-1" aria-hidden="true"></i>
+                    Iya, Setuju
                 </button>
             </div>
         </form>

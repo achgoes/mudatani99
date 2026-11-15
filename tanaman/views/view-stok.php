@@ -127,9 +127,9 @@
                                     class="btn-table-edit"
                                     onclick="openModalEditTanaman(<?= htmlspecialchars(json_encode($row)) ?>)"
                                     title="Edit Data Stok Tanaman"
+                                    aria-label="Edit Data Stok Tanaman"
                                 >
-                                    <i class="fa-solid fa-pen-to-square"></i>
-                                    <span>Edit</span>
+                                    <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
                                 </button>
 
                                 <button
@@ -137,8 +137,9 @@
                                     class="btn-table-delete"
                                     onclick="openModalDeleteTanaman(<?= (int)$row['id'] ?>, '<?= htmlspecialchars(addslashes($row['nama_tanaman'])) ?>', '<?= htmlspecialchars(addslashes($row['jumlah_kemasan'])) ?>')"
                                     title="Hapus Data Stok Tanaman"
+                                    aria-label="Hapus Data Stok Tanaman"
                                 >
-                                    <i class="fa-solid fa-trash-can"></i>
+                                    <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
                                 </button>
                             </div>
                         </td>

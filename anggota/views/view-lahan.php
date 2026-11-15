@@ -122,9 +122,9 @@
                                     class="btn-table-edit"
                                     onclick="openModalEditLahan(<?= htmlspecialchars(json_encode($row)) ?>)"
                                     title="Edit Data Lahan"
+                                    aria-label="Edit Data Lahan"
                                 >
-                                    <i class="fa-solid fa-pen-to-square"></i>
-                                    <span>Edit</span>
+                                    <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
                                 </button>
 
                                 <button
@@ -132,8 +132,9 @@
                                     class="btn-table-delete"
                                     onclick="openModalDeleteLahan(<?= (int)$row['id'] ?>, '<?= htmlspecialchars(addslashes($row['nama_petani'])) ?>', '<?= htmlspecialchars(addslashes($row['luas_lahan'])) ?>')"
                                     title="Hapus Data Lahan"
+                                    aria-label="Hapus Data Lahan"
                                 >
-                                    <i class="fa-solid fa-trash-can"></i>
+                                    <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
                                 </button>
                             </div>
                         </td>

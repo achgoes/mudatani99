@@ -303,19 +303,37 @@
 .action-btn-group {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  flex-wrap: nowrap;
+  gap: 0.45rem;
+}
+
+.action-btn-group > button,
+.action-btn-group > a {
+  width: 36px;
+  height: 36px;
+  padding: 0 !important;
+  justify-content: center;
+  gap: 0;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+  text-decoration: none;
+}
+
+.action-btn-group > button:focus-visible,
+.action-btn-group > a:focus-visible {
+  outline: 2px solid var(--clr-agro-600);
+  outline-offset: 2px;
 }
 
 .btn-table-edit {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.45rem 0.85rem;
+  justify-content: center;
   border-radius: var(--radius-md);
   background: #f0fdf4;
   border: 1px solid var(--clr-agro-300);
   color: var(--clr-agro-700);
-  font-size: 0.78rem;
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
   transition: var(--transition-smooth);
@@ -331,13 +349,12 @@
 .btn-table-delete {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.45rem 0.85rem;
+  justify-content: center;
   border-radius: var(--radius-md);
   background: #fef2f2;
   border: 1px solid #fecaca;
   color: #dc2626;
-  font-size: 0.78rem;
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
   transition: var(--transition-smooth);
@@ -642,6 +659,16 @@
     width: 40px;
     height: 40px;
     font-size: 1.15rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .action-btn-group > button,
+  .action-btn-group > a {
+    min-width: 44px;
+    min-height: 44px;
+    width: 44px;
+    height: 44px;
   }
 }
 

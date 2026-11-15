@@ -371,6 +371,26 @@ function openModalDeleteTransaksiAkhir(id, kode, namaPetani, beratFinal) {
     if (modal) modal.classList.add('show');
 }
 
+function openDeleteFromEditTransaksiAkhir() {
+    const idVal = document.getElementById('edit-ta-id')?.value || '';
+    if (!idVal) return;
+
+    const t = (typeof TRANSAKSI_AKHIR_INFO_MAP !== 'undefined') ? TRANSAKSI_AKHIR_INFO_MAP[idVal] : null;
+    closeModal('modalEditTransaksiAkhir');
+
+    if (t) {
+        openModalDeleteTransaksiAkhir(
+            t.id || idVal,
+            t.kode_transaksi || '-',
+            t.nama_petani || '-',
+            t.berat_final || '0 Kg'
+        );
+    } else {
+        const beratFinal = document.getElementById('edit-ta-berat-final')?.value || '0 Kg';
+        openModalDeleteTransaksiAkhir(idVal, '-', '-', beratFinal);
+    }
+}
+
 function closeModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) modal.classList.remove('show');

@@ -236,9 +236,9 @@
                                     class="btn-table-info"
                                     onclick="openModalInfoHutang(<?= (int)$row['id'] ?>)"
                                     title="Lihat detail hutang dan jejak pembayarannya"
+                                    aria-label="Lihat detail hutang dan jejak pembayarannya"
                                 >
-                                    <i class="fa-solid fa-circle-info"></i>
-                                    <span>Info</span>
+                                    <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
                                 </button>
 
                                 <?php if (!$isLunas): ?>
@@ -248,9 +248,9 @@
                                         class="btn-table-bayar"
                                         onclick="openModalBayarHutang(<?= htmlspecialchars(json_encode($row)) ?>)"
                                         title="Bayar Hutang Pupuk Petani (Buka Pop Up Bayar)"
+                                        aria-label="Bayar Hutang Pupuk Petani"
                                     >
-                                        <i class="fa-solid fa-money-bill-wave"></i>
-                                        <span>Bayar</span>
+                                        <i class="fa-solid fa-money-bill-wave" aria-hidden="true"></i>
                                     </button>
 
                                     <button
@@ -258,9 +258,9 @@
                                         class="btn-table-edit"
                                         onclick="openModalEditHutang(<?= htmlspecialchars(json_encode($row)) ?>)"
                                         title="Edit Data Hutang Pupuk"
+                                        aria-label="Edit Data Hutang Pupuk"
                                     >
-                                        <i class="fa-solid fa-pen-to-square"></i>
-                                        <span>Edit</span>
+                                        <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
                                     </button>
 
                                     <button
@@ -268,8 +268,9 @@
                                         class="btn-table-delete"
                                         onclick="openModalDeleteHutang(<?= (int)$row['id'] ?>, '<?= htmlspecialchars(addslashes($row['nama_petani'])) ?>', '<?= htmlspecialchars(addslashes($row['nama_pupuk'])) ?>', '<?= htmlspecialchars(addslashes($row['jumlah_karung'])) ?>')"
                                         title="Hapus Data & Kembalikan Stok Karung"
+                                        aria-label="Hapus Data dan Kembalikan Stok Karung"
                                     >
-                                        <i class="fa-solid fa-trash-can"></i>
+                                        <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
                                     </button>
                                 <?php endif; ?>
                             </div>

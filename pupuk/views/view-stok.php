@@ -127,9 +127,9 @@
                                     class="btn-table-edit"
                                     onclick="openModalEditPupuk(<?= htmlspecialchars(json_encode($row)) ?>)"
                                     title="Edit Data Pupuk"
+                                    aria-label="Edit Data Pupuk"
                                 >
-                                    <i class="fa-solid fa-pen-to-square"></i>
-                                    <span>Edit</span>
+                                    <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
                                 </button>
 
                                 <button
@@ -137,8 +137,9 @@
                                     class="btn-table-delete"
                                     onclick="openModalDeletePupuk(<?= (int)$row['id'] ?>, '<?= htmlspecialchars(addslashes($row['nama_pupuk'])) ?>', '<?= htmlspecialchars(addslashes($row['jumlah_karung'])) ?>')"
                                     title="Hapus Data Pupuk"
+                                    aria-label="Hapus Data Pupuk"
                                 >
-                                    <i class="fa-solid fa-trash-can"></i>
+                                    <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
                                 </button>
                             </div>
                         </td>

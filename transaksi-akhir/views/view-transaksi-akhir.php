@@ -182,43 +182,33 @@
                             <div class="action-btn-group justify-end">
                                 <button
                                     type="button"
-                                    class="btn-table-info"
+                                    class="btn-table-info btn-ta-icon-only"
                                     onclick="openModalInfoTransaksiAkhir(<?= (int)$row['id'] ?>)"
-                                    title="Lihat info lengkap transaksi akhir"
+                                    title="Info Lengkap"
+                                    aria-label="Lihat info lengkap transaksi akhir <?= htmlspecialchars($row['nama_petani']) ?>"
                                 >
-                                    <i class="fa-solid fa-circle-info"></i>
-                                    <span>Info Lengkap</span>
+                                    <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
                                 </button>
 
                                 <a
                                     href="<?= htmlspecialchars(appUrl('transaksi-akhir/print-transaksi-akhir.php?id=' . (int)$row['id'])) ?>"
                                     target="_blank"
                                     rel="noopener"
-                                    class="btn-table-print"
-                                    title="Cetak bukti transaksi akhir"
+                                    class="btn-table-print btn-ta-icon-only"
+                                    title="Print"
+                                    aria-label="Cetak bukti transaksi akhir <?= htmlspecialchars($row['nama_petani']) ?>"
                                 >
-                                    <i class="fa-solid fa-print"></i>
-                                    <span>Print</span>
+                                    <i class="fa-solid fa-print" aria-hidden="true"></i>
                                 </a>
 
                                 <button
                                     type="button"
-                                    class="btn-table-edit"
+                                    class="btn-table-edit btn-ta-icon-only"
                                     onclick="openModalEditTransaksiAkhir(<?= (int)$row['id'] ?>)"
-                                    title="Edit data transaksi akhir"
+                                    title="Edit / Hapus"
+                                    aria-label="Edit atau hapus transaksi akhir <?= htmlspecialchars($row['nama_petani']) ?>"
                                 >
-                                    <i class="fa-solid fa-pen-to-square"></i>
-                                    <span>Edit</span>
-                                </button>
-
-                                <button
-                                    type="button"
-                                    class="btn-table-delete"
-                                    onclick="openModalDeleteTransaksiAkhir(<?= (int)$row['id'] ?>, '<?= htmlspecialchars(addslashes($row['kode_transaksi'])) ?>', '<?= htmlspecialchars(addslashes($row['nama_petani'])) ?>', '<?= htmlspecialchars(addslashes($row['berat_final'])) ?>')"
-                                    title="Hapus data transaksi akhir"
-                                >
-                                    <i class="fa-solid fa-trash-can"></i>
-                                    <span>Hapus</span>
+                                    <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
                                 </button>
                             </div>
                         </td>

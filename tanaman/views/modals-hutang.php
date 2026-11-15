@@ -305,15 +305,16 @@ $hutangReturnView = $activeView === 'kelola' ? 'hutang' : $activeView;
                     Seluruh stok kemasan item pada transaksi ini akan <b>otomatis dikembalikan</b> ke data Stok Tanaman.
                 </p>
                 <p class="text-xs text-rose-600 bg-rose-50 p-2 rounded-lg border border-rose-200">
-                    Apakah Anda yakin ingin menghapus data hutang ini?
+                    <i class="fa-solid fa-circle-exclamation me-1" aria-hidden="true"></i>
+                    <strong>Peringatan!</strong> Apakah Anda yakin ingin menghapus data hutang ini?
                 </p>
             </div>
 
             <div class="custom-modal-footer justify-center">
                 <button type="button" class="btn-modal-cancel" onclick="closeModal('modalDeleteHutang')">Batal</button>
                 <button type="submit" class="btn-modal-save bg-rose-600 hover:bg-rose-700 shadow-rose-600/30">
-                    <i class="fa-solid fa-trash-can mr-1"></i>
-                    Ya, Hapus &amp; Kembalikan Stok
+                    <i class="fa-solid fa-check me-1" aria-hidden="true"></i>
+                    Iya, Setuju
                 </button>
             </div>
         </form>

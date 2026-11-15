@@ -130,9 +130,9 @@
                                     class="btn-table-edit"
                                     onclick="openModalEditProduk(<?= htmlspecialchars(json_encode($row)) ?>)"
                                     title="Edit Data Produk"
+                                    aria-label="Edit Data"
                                 >
-                                    <i class="fa-solid fa-pen-to-square"></i>
-                                    <span>Edit</span>
+                                    <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
                                 </button>
 
                                 <button
@@ -140,8 +140,9 @@
                                     class="btn-table-delete"
                                     onclick="openModalDeleteProduk(<?= (int)$row['id'] ?>, '<?= htmlspecialchars(addslashes($row['nama_produk'])) ?>', '<?= htmlspecialchars(addslashes($row['jenis'])) ?>')"
                                     title="Hapus Data Produk"
+                                    aria-label="Hapus Data"
                                 >
-                                    <i class="fa-solid fa-trash-can"></i>
+                                    <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
                                 </button>
                             </div>
                         </td>

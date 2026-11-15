@@ -172,9 +172,9 @@
                                     class="btn-table-info"
                                     onclick="openModalInfoSetoran(<?= (int)$row['id'] ?>)"
                                     title="Lihat info lengkap setoran petani"
+                                    aria-label="Lihat info lengkap setoran petani"
                                 >
-                                    <i class="fa-solid fa-circle-info"></i>
-                                    <span>Info</span>
+                                    <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
                                 </button>
 
                                 <a
@@ -183,9 +183,9 @@
                                     rel="noopener"
                                     class="btn-table-print"
                                     title="Cetak bukti setoran petani"
+                                    aria-label="Cetak bukti setoran petani"
                                 >
-                                    <i class="fa-solid fa-print"></i>
-                                    <span>Print</span>
+                                    <i class="fa-solid fa-print" aria-hidden="true"></i>
                                 </a>
 
                                 <button
@@ -193,9 +193,9 @@
                                     class="btn-table-delete"
                                     onclick="openModalDeleteSetoran(<?= (int)$row['id'] ?>, '<?= htmlspecialchars(addslashes($row['kode_setoran'])) ?>', '<?= htmlspecialchars(addslashes($row['nama_petani'])) ?>', '<?= htmlspecialchars(addslashes($row['jumlah_berat'])) ?>')"
                                     title="Hapus data setoran petani"
+                                    aria-label="Hapus data setoran petani"
                                 >
-                                    <i class="fa-solid fa-trash-can"></i>
-                                    <span>Hapus</span>
+                                    <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
                                 </button>
                             </div>
                         </td>

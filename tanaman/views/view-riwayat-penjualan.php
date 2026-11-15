@@ -186,9 +186,9 @@
                                         class="btn-table-info"
                                         onclick="openModalInfoPenjualan(<?= (int)$rp['penjualan_id'] ?>)"
                                         title="Lihat detail nota penjualan aktif"
+                                        aria-label="Lihat detail nota penjualan aktif"
                                     >
-                                        <i class="fa-solid fa-circle-info"></i>
-                                        <span>Info</span>
+                                        <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
                                     </button>
                                     <a
                                         href="<?= htmlspecialchars(appUrl('tanaman/print-penjualan.php?id=' . (int)$rp['penjualan_id'])) ?>"
@@ -196,9 +196,9 @@
                                         rel="noopener"
                                         class="btn-table-print"
                                         title="Print nota penjualan"
+                                        aria-label="Print nota penjualan"
                                     >
-                                        <i class="fa-solid fa-print"></i>
-                                        <span>Nota</span>
+                                        <i class="fa-solid fa-print" aria-hidden="true"></i>
                                     </a>
                                 <?php else: ?>
                                     <span class="text-xs text-slate-400 font-semibold italic">Nota Dihapus</span>

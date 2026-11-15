@@ -90,9 +90,9 @@
                                     class="btn-table-edit"
                                     onclick="openModalEdit(<?= htmlspecialchars(json_encode($u)) ?>)"
                                     title="Edit Data User"
+                                    aria-label="Edit User"
                                 >
-                                    <i class="fa-solid fa-pen-to-square"></i>
-                                    <span>Edit</span>
+                                    <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
                                 </button>
 
                                 <!-- Tombol Hapus User (Hanya jika bukan user aktif) -->
@@ -102,8 +102,9 @@
                                     class="btn-table-delete"
                                     onclick="openModalDelete(<?= $u['id'] ?>, '<?= htmlspecialchars(addslashes($u['nama'])) ?>', '<?= htmlspecialchars($u['nik']) ?>')"
                                     title="Hapus User"
+                                    aria-label="Hapus User"
                                 >
-                                    <i class="fa-solid fa-trash-can"></i>
+                                    <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
                                 </button>
                                 <?php endif; ?>
                             </div>

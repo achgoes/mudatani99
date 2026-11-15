@@ -153,15 +153,16 @@
                 </div>
                 <h5 class="font-bold text-slate-800 text-base mb-2" id="delete-name-display">-</h5>
                 <p class="text-xs text-rose-600 bg-rose-50 p-2 rounded-lg border border-rose-200">
-                    Apakah Anda yakin ingin menghapus anggota petani ini beserta data lahannya? Tindakan ini tidak dapat dibatalkan.
+                    <i class="fa-solid fa-circle-exclamation me-1" aria-hidden="true"></i>
+                    <strong>Peringatan!</strong> Apakah Anda yakin ingin menghapus anggota petani ini beserta data lahannya? Tindakan ini tidak dapat dibatalkan.
                 </p>
             </div>
 
             <div class="custom-modal-footer justify-center">
                 <button type="button" class="btn-modal-cancel" onclick="closeModal('modalDeleteAnggota')">Batal</button>
                 <button type="submit" class="btn-modal-save bg-rose-600 hover:bg-rose-700 shadow-rose-600/30">
-                    <i class="fa-solid fa-trash-can mr-1"></i>
-                    Ya, Hapus
+                    <i class="fa-solid fa-check me-1" aria-hidden="true"></i>
+                    Iya, Setuju
                 </button>
             </div>
         </form>

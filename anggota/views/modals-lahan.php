@@ -174,15 +174,16 @@
                 <h5 class="font-bold text-slate-800 text-base mb-1" id="delete-lahan-name-display">-</h5>
                 <p class="text-xs text-slate-500 mb-2">Luas Lahan: <span id="delete-lahan-luas-display" class="font-bold text-slate-700">-</span></p>
                 <p class="text-xs text-rose-600 bg-rose-50 p-2 rounded-lg border border-rose-200">
-                    Apakah Anda yakin ingin menghapus data pemetaan lahan ini?
+                    <i class="fa-solid fa-circle-exclamation me-1" aria-hidden="true"></i>
+                    <strong>Peringatan!</strong> Apakah Anda yakin ingin menghapus data pemetaan lahan ini? Tindakan ini tidak dapat dibatalkan.
                 </p>
             </div>
 
             <div class="custom-modal-footer justify-center">
                 <button type="button" class="btn-modal-cancel" onclick="closeModal('modalDeleteLahan')">Batal</button>
                 <button type="submit" class="btn-modal-save bg-rose-600 hover:bg-rose-700 shadow-rose-600/30">
-                    <i class="fa-solid fa-trash-can mr-1"></i>
-                    Ya, Hapus
+                    <i class="fa-solid fa-check me-1" aria-hidden="true"></i>
+                    Iya, Setuju
                 </button>
             </div>
         </form>

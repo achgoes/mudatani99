@@ -192,14 +192,63 @@
   font-weight: 700;
 }
 
-/* Kolom Aksi 4 Tombol */
+/* Kolom Aksi 3 Tombol Ikon */
 .col-aksi {
-  width: auto;
-  min-width: 280px;
+  width: 146px;
+  min-width: 140px;
 }
 
 .action-btn-group {
   flex-wrap: nowrap;
+  gap: 0.4rem;
+}
+
+#table-transaksi-akhir-data .btn-ta-icon-only {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  justify-content: center;
+  gap: 0;
+  font-size: 0.85rem;
+}
+
+.modal-footer-edit-ta {
+  justify-content: space-between !important;
+  flex-wrap: wrap;
+}
+
+.modal-footer-right-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-left: auto;
+}
+
+.btn-modal-delete-inline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.55rem 1.05rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid #fca5a5;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.btn-modal-delete-inline:hover {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.btn-modal-delete-inline:focus-visible {
+  outline: 2px solid #dc2626;
+  outline-offset: 2px;
 }
 
 .btn-table-info {
@@ -517,10 +566,29 @@
     gap: 0.65rem;
   }
 
+  #table-transaksi-akhir-data .btn-ta-icon-only {
+    min-width: 44px;
+    min-height: 44px;
+    width: 44px;
+    height: 44px;
+  }
+
+  .modal-footer-edit-ta {
+    flex-direction: column-reverse;
+    align-items: stretch !important;
+  }
+
+  .modal-footer-right-actions {
+    width: 100%;
+    margin-left: 0;
+    justify-content: flex-end;
+  }
+
   .btn-table-info,
   .btn-table-print,
   .btn-table-edit,
   .btn-table-delete,
+  .btn-modal-delete-inline,
   .btn-modal-cancel,
   .btn-modal-save,
   .btn-modal-close {
