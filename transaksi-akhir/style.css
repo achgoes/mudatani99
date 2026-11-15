@@ -1,14 +1,10 @@
 /* ==========================================================================
-   mudatani99 - Transaksi Akhir Setoran Petani (transaksi-akhir/style.css)
+   mudatani99 - Manajemen Transaksi Akhir (transaksi-akhir/style.css)
    ========================================================================== */
 
-.stat-icon-rose {
-  background: #ffe4e6;
-  color: #e11d48;
-}
-
-.stat-info .stat-value.stat-value-rupiah {
-  font-size: 1.3rem;
+.stat-icon-indigo {
+  background: #e0e7ff;
+  color: #4338ca;
 }
 
 /* Filter Rentang Tanggal */
@@ -68,13 +64,14 @@
 .btn-filter-tanggal:focus-visible,
 .btn-table-info:focus-visible,
 .btn-table-print:focus-visible,
-.btn-modal-delete-inside:focus-visible {
+.btn-table-edit:focus-visible,
+.btn-table-delete:focus-visible {
   outline: 2px solid #16a34a;
   outline-offset: 2px;
 }
 
 /* Badges di Tabel */
-.badge-kode-ta {
+.badge-kode-transaksi {
   display: inline-block;
   margin-top: 0.18rem;
   padding: 0.16rem 0.5rem;
@@ -87,11 +84,11 @@
   white-space: nowrap;
 }
 
-.badge-berat-setoran {
+.badge-jumlah-setoran {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.28rem 0.65rem;
+  padding: 0.3rem 0.72rem;
   border-radius: var(--radius-md);
   background: #eff6ff;
   color: #1e40af;
@@ -104,36 +101,22 @@
 .badge-rapaksi {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  padding: 0.28rem 0.65rem;
-  border-radius: var(--radius-md);
-  background: #fff1f2;
-  color: #be123c;
-  border: 1px solid #fecdd3;
-  font-size: 0.8rem;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.badge-harga-kg {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.28rem 0.65rem;
-  border-radius: var(--radius-md);
-  background: #f0fdf4;
-  color: #15803d;
-  border: 1px solid #bbf7d0;
-  font-size: 0.8rem;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.badge-jumlah-uang {
-  display: inline-flex;
-  align-items: center;
   gap: 0.35rem;
   padding: 0.3rem 0.72rem;
+  border-radius: var(--radius-md);
+  background: #fffbeb;
+  color: #92400e;
+  border: 1px solid #fde68a;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.badge-berat-final {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.75rem;
   border-radius: var(--radius-md);
   background: #ecfdf5;
   color: #065f46;
@@ -143,12 +126,87 @@
   white-space: nowrap;
 }
 
-/* Tombol Aksi Tabel */
+.badge-tanggal-ta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.65rem;
+  border-radius: var(--radius-md);
+  background: #f8fafc;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge-nama-tanaman {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.28rem 0.68rem;
+  border-radius: 0.45rem;
+  background-color: #eff6ff;
+  color: #1e40af;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border: 1px solid #bfdbfe;
+  white-space: nowrap;
+}
+
+.badge-harga-kg {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.72rem;
+  border-radius: var(--radius-md);
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.badge-total-uang {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  padding: 0.32rem 0.78rem;
+  border-radius: var(--radius-md);
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #6ee7b7;
+  font-size: 0.82rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.ta-tanaman-status-ok {
+  color: #15803d !important;
+  font-weight: 700;
+}
+
+.ta-tanaman-status-zero {
+  color: #b45309 !important;
+  font-weight: 700;
+}
+
+/* Kolom Aksi 4 Tombol */
+.col-aksi {
+  width: auto;
+  min-width: 280px;
+}
+
+.action-btn-group {
+  flex-wrap: nowrap;
+}
+
 .btn-table-info {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.42rem 0.75rem;
+  padding: 0.42rem 0.72rem;
   border-radius: var(--radius-md);
   background-color: #eff6ff;
   color: #1d4ed8;
@@ -171,7 +229,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.42rem 0.75rem;
+  padding: 0.42rem 0.72rem;
   border-radius: var(--radius-md);
   background-color: #f8fafc;
   color: #0f172a;
@@ -191,10 +249,10 @@
   transform: translateY(-1px);
 }
 
-/* Modal Form & Info */
+/* Modal Transaksi Akhir & Info Lengkap */
 .modal-ta-dialog,
 .modal-info-ta-dialog {
-  max-width: 740px !important;
+  max-width: 720px !important;
   max-height: 90vh !important;
   display: flex !important;
   flex-direction: column !important;
@@ -215,45 +273,43 @@
   gap: 0.85rem;
 }
 
-.ta-setoran-preview {
+.modal-form-grid-3 {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.65rem;
-  padding: 0.75rem 0.9rem;
-  margin-bottom: 1rem;
-  border-radius: var(--radius-lg);
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
+  gap: 0.85rem;
 }
 
-.ta-preview-label {
-  display: block;
-  font-size: 0.68rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: #166534;
+.ta-calc-box {
+  margin-bottom: 1.15rem;
+  padding: 0.95rem 1rem;
+  border-radius: var(--radius-xl);
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
 }
 
-.ta-preview-val {
-  display: block;
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: #0f172a;
-  margin-top: 0.1rem;
+.ta-calc-box-header {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #14532d;
+  margin-bottom: 0.85rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px dashed #cbd5e1;
 }
 
-.input-unit-group {
+.input-berat-group {
   display: flex;
   align-items: center;
   gap: 0.45rem;
 }
 
-.input-unit-group .modal-input {
+.input-berat-group .modal-input {
   flex: 1;
 }
 
-.unit-badge {
+.berat-unit-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -273,40 +329,7 @@
   box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.22) !important;
 }
 
-/* Footer Modal Edit dengan Tombol Hapus di Dalamnya */
-.ta-edit-footer {
-  justify-content: space-between !important;
-  flex-wrap: wrap;
-}
-
-.ta-edit-footer-right {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-}
-
-.btn-modal-delete-inside {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.55rem 1rem;
-  border-radius: var(--radius-lg);
-  background: #fef2f2;
-  color: #dc2626;
-  border: 1px solid #fecaca;
-  font-size: 0.8rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: var(--transition-smooth);
-}
-
-.btn-modal-delete-inside:hover {
-  background: #dc2626;
-  color: #ffffff;
-  border-color: #dc2626;
-}
-
-/* Info Lanjutan Modal */
+/* Info Lengkap Transaksi Akhir */
 .info-ta-top-banner {
   display: flex;
   align-items: center;
@@ -339,9 +362,39 @@
   margin: 0.15rem 0 0;
 }
 
+.info-ta-calc-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin-bottom: 0.85rem;
+}
+
+.info-calc-card {
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--radius-lg);
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+}
+
+.info-calc-card-amber {
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.info-calc-card-green {
+  background: #ecfdf5;
+  border-color: #6ee7b7;
+}
+
+.info-calc-val {
+  display: block;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
 .info-ta-detail-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.65rem;
   margin-bottom: 1rem;
 }
@@ -357,7 +410,7 @@
   display: block;
   font-size: 0.7rem;
   font-weight: 600;
-  color: #64748b;
+  color: #475569;
   margin-bottom: 0.2rem;
 }
 
@@ -366,40 +419,6 @@
   font-size: 0.82rem;
   font-weight: 700;
   color: #1e293b;
-}
-
-.info-ta-calc-grid {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 0.6rem;
-}
-
-.info-calc-box {
-  padding: 0.65rem 0.75rem;
-  border-radius: var(--radius-lg);
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-}
-
-.info-calc-rapaksi {
-  background: #fff1f2;
-  border-color: #fecdd3;
-}
-
-.info-calc-akhir {
-  background: #f0fdf4;
-  border-color: #bbf7d0;
-}
-
-.info-calc-uang {
-  background: #ecfdf5;
-  border-color: #6ee7b7;
-}
-
-.info-calc-val {
-  display: block;
-  font-size: 0.86rem;
-  font-weight: 800;
 }
 
 .info-riwayat-section {
@@ -470,11 +489,11 @@
 .info-riwayat-empty {
   text-align: center;
   padding: 1.5rem 1rem !important;
-  color: #64748b !important;
+  color: #475569 !important;
   font-weight: 600;
 }
 
-@media (max-width: 680px) {
+@media (max-width: 640px) {
   .ta-date-filter-group {
     width: 100%;
   }
@@ -491,26 +510,20 @@
   }
 
   .modal-form-grid-2,
-  .ta-setoran-preview,
-  .info-ta-detail-grid,
-  .info-ta-calc-grid {
+  .modal-form-grid-3,
+  .info-ta-calc-grid,
+  .info-ta-detail-grid {
     grid-template-columns: 1fr;
     gap: 0.65rem;
   }
 
-  .ta-edit-footer {
-    flex-direction: column-reverse;
-    align-items: stretch !important;
-  }
-
-  .ta-edit-footer-right {
-    justify-content: flex-end;
-  }
-
-  .btn-modal-delete-inside,
   .btn-table-info,
   .btn-table-print,
-  .btn-table-edit {
+  .btn-table-edit,
+  .btn-table-delete,
+  .btn-modal-cancel,
+  .btn-modal-save,
+  .btn-modal-close {
     min-height: 44px;
   }
 }

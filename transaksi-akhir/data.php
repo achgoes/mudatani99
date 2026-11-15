@@ -1,6 +1,6 @@
 <?php
 /**
- * mudatani99 - Data Loader & Flash Toast Transaksi Akhir
+ * mudatani99 - Data Loader & Flash Toast Manajemen Transaksi Akhir
  * File: transaksi-akhir/data.php
  */
 
@@ -9,18 +9,18 @@ $toastMessage = "";
 $toastType    = "";
 
 if (isset($_GET['status'])) {
-    $pName = htmlspecialchars($_GET['name'] ?? 'Petani');
-    $pUang = htmlspecialchars($_GET['uang'] ?? '');
+    $pName  = htmlspecialchars($_GET['name'] ?? 'Petani');
+    $pBerat = htmlspecialchars($_GET['berat'] ?? '');
 
     if ($_GET['status'] === 'added') {
         $toastTitle   = "Transaksi Akhir Disimpan!";
-        $uangInfo     = ($pUang !== '') ? " dengan jumlah uang <b>$pUang</b>" : "";
-        $toastMessage = "Transaksi akhir atas nama <b>$pName</b>" . $uangInfo . " berhasil dicatat.";
+        $beratInfo    = ($pBerat !== '') ? " dengan berat final <b>$pBerat</b>" : "";
+        $toastMessage = "Data transaksi akhir atas nama <b>$pName</b>" . $beratInfo . " berhasil disimpan.";
         $toastType    = "success";
     } elseif ($_GET['status'] === 'updated') {
         $toastTitle   = "Transaksi Akhir Diperbarui!";
-        $uangInfo     = ($pUang !== '') ? " (Jumlah uang: <b>$pUang</b>)" : "";
-        $toastMessage = "Perubahan transaksi akhir <b>$pName</b>" . $uangInfo . " berhasil disimpan.";
+        $beratInfo    = ($pBerat !== '') ? " dengan berat final <b>$pBerat</b>" : "";
+        $toastMessage = "Data transaksi akhir atas nama <b>$pName</b>" . $beratInfo . " berhasil diperbarui.";
         $toastType    = "success";
     } elseif ($_GET['status'] === 'deleted') {
         $toastTitle   = "Berhasil Dihapus!";
@@ -35,119 +35,109 @@ if (!empty($feedbackMessage) && $feedbackType === 'danger') {
     $toastType    = "danger";
 }
 
-// 1. Item detail setoran petani dikelompokkan per setoran_id
-$setoranItemsGrouped = getSetoranItemsGroupedForTa($conn);
+// 1. Rekap Setoran Petani per anggota_id (sumber Jumlah Setoran, berat per tanaman & rincian nota setoran)
+$rekapSetoranPerAnggota = getRekapSetoranPerAnggota($conn);
 
-// 2. Daftar Transaksi Akhir
-$transaksiList       = [];
-$transaksiInfoMap    = [];
-$usedSetoranMap      = [];
-$totalBeratAkhirSum  = 0.0;
-$totalJumlahUangSum  = 0;
-$bulanIniCount       = 0;
-$bulanIniUangSum     = 0;
-$currentYearMonth    = date('Y-m');
+// 2. Daftar Anggota Petani (sumber dropdown Nama Petani beserta total setoran masing-masing)
+$anggotaList = [];
+$resAnggota  = $conn->query("SELECT id, nama_petani, alamat, keterangan FROM anggota_petani ORDER BY id ASC");
+if ($resAnggota) {
+    while ($row = $resAnggota->fetch_assoc()) {
+        $aid                      = (int)$row['id'];
+        $rekap                    = $rekapSetoranPerAnggota[$aid] ?? null;
+        $row['nama_petani']       = formatTitleCaseSetoran($row['nama_petani']);
+        $row['alamat']            = formatTitleCaseSetoran($row['alamat']);
+        $row['total_setoran_num']  = $rekap ? (float)$rekap['total_berat'] : 0.0;
+        $row['total_setoran_str']  = $rekap ? (string)$rekap['total_berat_str'] : '0 Kg';
+        $row['jumlah_nota']        = $rekap ? (int)$rekap['jumlah_nota'] : 0;
+        $row['berat_per_tanaman']  = $rekap ? ($rekap['berat_per_tanaman'] ?? []) : [];
+        $anggotaList[]             = $row;
+    }
+}
 
-$resTa = $conn->query("
-    SELECT t.id, t.kode_transaksi, t.setoran_id, t.anggota_id,
-           COALESCE(a.nama_petani, s.nama_petani, t.nama_petani) AS nama_petani,
+// 3. Daftar Master Tanaman (sumber dropdown Tanaman dari master_produk jenis = 'Tanaman')
+$masterTanamanList = [];
+$resMasterTanaman  = $conn->query("SELECT id, nama_produk, keterangan FROM master_produk WHERE jenis = 'Tanaman' ORDER BY id ASC");
+if ($resMasterTanaman) {
+    while ($row = $resMasterTanaman->fetch_assoc()) {
+        $row['id']          = (int)$row['id'];
+        $row['nama_produk'] = formatTitleCaseSetoran($row['nama_produk']);
+        $row['keterangan']  = formatTitleCaseSetoran($row['keterangan']);
+        $masterTanamanList[] = $row;
+    }
+}
+
+// 4. Daftar Transaksi Akhir
+$transaksiList            = [];
+$transaksiInfoMap         = [];
+$totalJumlahSetoran       = 0.0;
+$totalRapaksi             = 0.0;
+$totalBeratFinal          = 0.0;
+$totalUangTransaksiAkhir  = 0;
+$petaniTransaksiIds       = [];
+
+$resTransaksi = $conn->query("
+    SELECT t.id, t.kode_transaksi, t.anggota_id,
+           COALESCE(a.nama_petani, t.nama_petani) AS nama_petani,
            COALESCE(NULLIF(a.alamat, ''), '-') AS alamat_petani,
-           s.kode_setoran,
-           s.nama_tanaman AS setoran_tanaman,
-           s.jumlah_berat AS setoran_jumlah_berat_raw,
-           s.tanggal AS tanggal_setoran,
-           s.keterangan AS keterangan_setoran,
-           t.berat_setoran, t.rapaksi, t.berat_akhir,
-           t.harga_per_kg, t.jumlah_uang, t.tanggal,
-           t.keterangan, t.dicatat_oleh, t.created_at
+           t.tanaman_id,
+           COALESCE(m.nama_produk, NULLIF(t.nama_tanaman, ''), '-') AS nama_tanaman,
+           t.jumlah_setoran, t.rapaksi, t.berat_final, t.harga_per_kg, t.jumlah_uang,
+           t.tanggal, t.keterangan, t.dicatat_oleh, t.created_at
     FROM transaksi_akhir t
-    LEFT JOIN setoran_petani s ON t.setoran_id = s.id
-    LEFT JOIN anggota_petani a ON COALESCE(t.anggota_id, s.anggota_id) = a.id
+    LEFT JOIN anggota_petani a ON t.anggota_id = a.id
+    LEFT JOIN master_produk m ON t.tanaman_id = m.id AND m.jenis = 'Tanaman'
     ORDER BY t.tanggal DESC, t.id DESC
 ");
 
-if ($resTa) {
-    while ($row = $resTa->fetch_assoc()) {
-        $tid = (int)$row['id'];
-        $sid = (int)$row['setoran_id'];
+if ($resTransaksi) {
+    while ($row = $resTransaksi->fetch_assoc()) {
+        $tid       = (int)$row['id'];
+        $anggotaId = (int)$row['anggota_id'];
+        $tanamanId = !empty($row['tanaman_id']) ? (int)$row['tanaman_id'] : null;
 
-        $usedSetoranMap[$sid] = $tid;
+        $jumlahSetoranNum = round(parseBeratSetoranFloat($row['jumlah_setoran']), 2);
+        $rapaksiNum       = round(parseBeratSetoranFloat($row['rapaksi']), 2);
+        $beratFinalNum    = max(0.0, round($jumlahSetoranNum - $rapaksiNum, 2));
+        $hargaPerKgNum    = max(0, (int)($row['harga_per_kg'] ?? 0));
+        $jumlahUangRaw    = max(0, (int)($row['jumlah_uang'] ?? 0));
+        $jumlahUangNum    = ($jumlahUangRaw <= 0 && $beratFinalNum > 0 && $hargaPerKgNum > 0)
+            ? (int)round($beratFinalNum * $hargaPerKgNum)
+            : $jumlahUangRaw;
 
-        // Sinkronkan berat setoran dari data setoran_petani terbaru jika tersedia
-        $beratSetoranNum = ($row['setoran_jumlah_berat_raw'] !== null && $row['setoran_jumlah_berat_raw'] !== '')
-            ? round(parseDecimalTa($row['setoran_jumlah_berat_raw']), 2)
-            : round((float)$row['berat_setoran'], 2);
-        $rapaksiNum    = round((float)$row['rapaksi'], 2);
-        $beratAkhirNum = round(max(0.0, $beratSetoranNum - $rapaksiNum), 2);
-        $hargaNum      = (int)$row['harga_per_kg'];
-        $jumlahUangNum = (int)round($beratAkhirNum * $hargaNum);
+        $rekapAnggota = $rekapSetoranPerAnggota[$anggotaId] ?? null;
 
-        $row['nama_petani']       = formatTitleCaseTa($row['nama_petani']);
-        $row['alamat_petani']     = formatTitleCaseTa($row['alamat_petani'] ?: '-');
-        $row['setoran_tanaman']   = formatTitleCaseTa($row['setoran_tanaman'] ?: '-');
-        $row['keterangan']        = formatTitleCaseTa($row['keterangan'] ?: '-');
-        $row['keterangan_setoran']= formatTitleCaseTa($row['keterangan_setoran'] ?: '-');
-        $row['dicatat_oleh']      = formatTitleCaseTa($row['dicatat_oleh'] ?: '-');
-
-        $row['berat_setoran_num'] = $beratSetoranNum;
-        $row['berat_setoran_str'] = formatBeratTaStr($beratSetoranNum);
-        $row['rapaksi_num']       = $rapaksiNum;
-        $row['rapaksi_plain']     = formatBeratPlainTa($rapaksiNum);
-        $row['rapaksi_str']       = formatBeratTaStr($rapaksiNum);
-        $row['berat_akhir_num']   = $beratAkhirNum;
-        $row['berat_akhir_str']   = formatBeratTaStr($beratAkhirNum);
-        $row['harga_per_kg_num']  = $hargaNum;
-        $row['harga_per_kg_str']  = formatRupiahTaStr($hargaNum);
-        $row['jumlah_uang_num']   = $jumlahUangNum;
-        $row['jumlah_uang_str']   = formatRupiahTaStr($jumlahUangNum);
-        $row['tanggal']           = !empty($row['tanggal']) ? $row['tanggal'] : substr((string)$row['created_at'], 0, 10);
-        $row['setoran_items']     = $setoranItemsGrouped[$sid] ?? [];
+        $row['id']                  = $tid;
+        $row['anggota_id']          = $anggotaId;
+        $row['tanaman_id']          = $tanamanId;
+        $row['nama_petani']         = formatTitleCaseSetoran($row['nama_petani']);
+        $row['alamat_petani']       = formatTitleCaseSetoran($row['alamat_petani'] ?: '-');
+        $row['nama_tanaman']        = formatTitleCaseSetoran($row['nama_tanaman'] ?: '-');
+        $row['keterangan']          = formatTitleCaseSetoran($row['keterangan'] ?: '-');
+        $row['dicatat_oleh']        = formatTitleCaseSetoran($row['dicatat_oleh'] ?: '-');
+        $row['jumlah_setoran_num']  = $jumlahSetoranNum;
+        $row['jumlah_setoran']      = formatBeratSetoranStr($jumlahSetoranNum);
+        $row['rapaksi_num']         = $rapaksiNum;
+        $row['rapaksi']             = formatBeratSetoranStr($rapaksiNum);
+        $row['berat_final_num']     = $beratFinalNum;
+        $row['berat_final']         = formatBeratSetoranStr($beratFinalNum);
+        $row['harga_per_kg_num']    = $hargaPerKgNum;
+        $row['harga_per_kg_rupiah'] = formatRupiahTransaksiAkhir($hargaPerKgNum);
+        $row['harga_per_kg_fmt']    = formatRupiahTransaksiAkhir($hargaPerKgNum) . ' /Kg';
+        $row['jumlah_uang_num']     = $jumlahUangNum;
+        $row['jumlah_uang_fmt']     = formatRupiahTransaksiAkhir($jumlahUangNum);
+        $row['tanggal']             = !empty($row['tanggal']) ? $row['tanggal'] : substr((string)$row['created_at'], 0, 10);
+        $row['live_setoran_num']    = $rekapAnggota ? (float)$rekapAnggota['total_berat'] : $jumlahSetoranNum;
+        $row['live_setoran_str']    = $rekapAnggota ? (string)$rekapAnggota['total_berat_str'] : $row['jumlah_setoran'];
+        $row['setoran_riwayat']     = $rekapAnggota ? $rekapAnggota['setoran_list'] : [];
 
         $transaksiList[]        = $row;
         $transaksiInfoMap[$tid] = $row;
 
-        $totalBeratAkhirSum += $beratAkhirNum;
-        $totalJumlahUangSum += $jumlahUangNum;
-
-        if (strpos((string)$row['tanggal'], $currentYearMonth) === 0) {
-            $bulanIniCount++;
-            $bulanIniUangSum += $jumlahUangNum;
-        }
-    }
-}
-
-// 3. Daftar Setoran Petani untuk dropdown Tambah/Edit Transaksi Akhir
-$setoranOptions = [];
-$availableSetoranCount = 0;
-$resSetoranOpt = $conn->query("
-    SELECT s.id, s.kode_setoran, s.anggota_id,
-           COALESCE(a.nama_petani, s.nama_petani) AS nama_petani,
-           COALESCE(NULLIF(a.alamat, ''), '-') AS alamat_petani,
-           s.nama_tanaman, s.jumlah_berat, s.tanggal, s.keterangan
-    FROM setoran_petani s
-    LEFT JOIN anggota_petani a ON s.anggota_id = a.id
-    ORDER BY s.tanggal DESC, s.id DESC
-");
-
-if ($resSetoranOpt) {
-    while ($row = $resSetoranOpt->fetch_assoc()) {
-        $sid      = (int)$row['id'];
-        $beratNum = round(parseDecimalTa($row['jumlah_berat']), 2);
-        $usedById = $usedSetoranMap[$sid] ?? 0;
-
-        $row['nama_petani']      = formatTitleCaseTa($row['nama_petani']);
-        $row['alamat_petani']    = formatTitleCaseTa($row['alamat_petani'] ?: '-');
-        $row['nama_tanaman']     = formatTitleCaseTa($row['nama_tanaman'] ?: '-');
-        $row['keterangan']       = formatTitleCaseTa($row['keterangan'] ?: '-');
-        $row['berat_num']        = $beratNum;
-        $row['berat_str']        = formatBeratTaStr($beratNum);
-        $row['used_ta_id']       = $usedById;
-        $row['items']            = $setoranItemsGrouped[$sid] ?? [];
-
-        if ($usedById === 0) {
-            $availableSetoranCount++;
-        }
-
-        $setoranOptions[] = $row;
+        $totalJumlahSetoran      += $jumlahSetoranNum;
+        $totalRapaksi            += $rapaksiNum;
+        $totalBeratFinal         += $beratFinalNum;
+        $totalUangTransaksiAkhir += $jumlahUangNum;
+        $petaniTransaksiIds[$anggotaId] = true;
     }
 }

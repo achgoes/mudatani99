@@ -43,6 +43,7 @@ $sidebarMenu = [
     ]],
     ['title' => 'Manajemen Setoran Petani', 'items' => [
         ['type' => 'link', 'label' => 'Setoran Petani', 'icon' => 'fa-scale-balanced', 'route' => 'setoran'],
+        ['type' => 'link', 'label' => 'Transaksi Akhir', 'icon' => 'fa-file-invoice', 'route' => 'transaksi-akhir'],
     ]],
 ];
 

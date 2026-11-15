@@ -18,7 +18,7 @@ require_once __DIR__ . '/data.php';
 
 $pageTitle           = "Transaksi Akhir | mudatani99 - Sistem Pengelolaan Kelompok Pertanian";
 $currentMenuTitle    = "Transaksi Akhir";
-$currentMenuSubtitle = "Perhitungan berat akhir setoran petani setelah potongan rapaksi serta nominal jumlah uang berdasarkan harga per Kg.";
+$currentMenuSubtitle = "Rekapitulasi jumlah setoran petani, potongan rapaksi, dan perhitungan berat final.";
 
 $extraCss = ['css/data-page.css', 'transaksi-akhir/style.css'];
 $extraJs  = ['transaksi-akhir/script.js'];

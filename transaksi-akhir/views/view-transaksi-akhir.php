@@ -1,48 +1,48 @@
 <!-- =========================================================
-     MANAJEMEN SETORAN PETANI - TRANSAKSI AKHIR
+     MANAJEMEN TRANSAKSI AKHIR - DAFTAR TRANSAKSI AKHIR
 ========================================================= -->
 <div class="user-stats-grid">
     <div class="user-stat-card">
         <div class="stat-info">
-            <h5>Total Transaksi Akhir</h5>
+            <h5>Total Transaksi</h5>
             <div class="stat-value"><?= count($transaksiList) ?></div>
-            <div class="stat-desc">Setoran petani telah diproses</div>
+            <div class="stat-desc"><?= count($petaniTransaksiIds) ?> petani tercatat</div>
         </div>
         <div class="stat-icon-wrap stat-icon-blue">
-            <i class="fa-solid fa-file-invoice-dollar"></i>
+            <i class="fa-solid fa-file-invoice"></i>
         </div>
     </div>
 
     <div class="user-stat-card">
         <div class="stat-info">
-            <h5>Total Berat Akhir</h5>
-            <div class="stat-value"><?= htmlspecialchars(formatBeratTaStr($totalBeratAkhirSum)) ?></div>
-            <div class="stat-desc">Berat bersih setelah rapaksi</div>
+            <h5>Total Jumlah Setoran</h5>
+            <div class="stat-value"><?= htmlspecialchars(formatBeratSetoranStr($totalJumlahSetoran)) ?></div>
+            <div class="stat-desc">Akumulasi berat kotor setoran</div>
         </div>
-        <div class="stat-icon-wrap stat-icon-green">
+        <div class="stat-icon-wrap stat-icon-indigo">
             <i class="fa-solid fa-scale-balanced"></i>
         </div>
     </div>
 
     <div class="user-stat-card">
         <div class="stat-info">
-            <h5>Total Jumlah Uang</h5>
-            <div class="stat-value stat-value-rupiah"><?= htmlspecialchars(formatRupiahTaStr($totalJumlahUangSum)) ?></div>
-            <div class="stat-desc">Akumulasi nilai transaksi akhir</div>
+            <h5>Total Rapaksi</h5>
+            <div class="stat-value"><?= htmlspecialchars(formatBeratSetoranStr($totalRapaksi)) ?></div>
+            <div class="stat-desc">Akumulasi potongan rapaksi</div>
         </div>
         <div class="stat-icon-wrap stat-icon-amber">
-            <i class="fa-solid fa-money-bill-wave"></i>
+            <i class="fa-solid fa-scissors"></i>
         </div>
     </div>
 
     <div class="user-stat-card">
         <div class="stat-info">
-            <h5>Transaksi Bulan Ini</h5>
-            <div class="stat-value"><?= $bulanIniCount ?> <span class="text-sm font-semibold">Nota</span></div>
-            <div class="stat-desc">Total: <?= htmlspecialchars(formatRupiahTaStr($bulanIniUangSum)) ?></div>
+            <h5>Total Berat Final</h5>
+            <div class="stat-value"><?= htmlspecialchars(formatBeratSetoranStr($totalBeratFinal)) ?></div>
+            <div class="stat-desc">Jumlah setoran dikurangi rapaksi</div>
         </div>
-        <div class="stat-icon-wrap stat-icon-rose">
-            <i class="fa-solid fa-calendar-check"></i>
+        <div class="stat-icon-wrap stat-icon-green">
+            <i class="fa-solid fa-weight-scale"></i>
         </div>
     </div>
 </div>
@@ -51,8 +51,8 @@
 <div class="user-table-card">
     <div class="table-card-header">
         <div class="table-title-group">
-            <h3>Daftar Transaksi Akhir Setoran Petani</h3>
-            <p>Menampilkan <?= count($transaksiList) ?> transaksi akhir hasil kalkulasi berat setoran dikurangi rapaksi dikali harga per Kg.</p>
+            <h3>Daftar Transaksi Akhir Petani</h3>
+            <p>Menampilkan <?= count($transaksiList) ?> transaksi akhir berdasarkan data setoran petani, tanaman, rapaksi, dan harga per Kg.</p>
         </div>
 
         <div class="table-card-actions">
@@ -70,7 +70,7 @@
             <!-- Pencarian -->
             <div class="search-input-wrap">
                 <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" id="ta-search-input" placeholder="Cari petani, kode, keterangan..." onkeyup="filterTransaksiAkhirTable()">
+                <input type="text" id="ta-search-input" placeholder="Cari petani, tanaman, total uang, ket..." onkeyup="filterTransaksiAkhirTable()">
             </div>
 
             <!-- Tombol Tambah Transaksi Akhir -->
@@ -82,16 +82,18 @@
     </div>
 
     <div class="table-responsive-custom">
-        <table class="user-table" id="table-ta-data">
+        <table class="user-table" id="table-transaksi-akhir-data">
             <thead>
                 <tr>
                     <th class="col-nomor">Nomor</th>
                     <th>Nama Petani</th>
-                    <th>Berat Setoran</th>
+                    <th>Tanaman</th>
+                    <th>Jumlah Setoran</th>
                     <th>Rapaksi</th>
-                    <th>Berat Akhir</th>
-                    <th>Harga /Kg</th>
-                    <th>Jumlah Uang</th>
+                    <th>Berat Final</th>
+                    <th>Harga (/Kg)</th>
+                    <th>Total Uang</th>
+                    <th>Tanggal</th>
                     <th>Keterangan</th>
                     <th class="col-aksi">Aksi</th>
                 </tr>
@@ -99,9 +101,9 @@
             <tbody id="table-ta-tbody">
                 <?php if (empty($transaksiList)): ?>
                 <tr id="ta-empty-default">
-                    <td colspan="9" class="table-empty-cell">
-                        <i class="fa-solid fa-file-invoice-dollar text-3xl mb-2 block"></i>
-                        Belum ada data transaksi akhir. Silakan klik tombol <b>Tambah Transaksi Akhir</b> untuk menghitung setoran petani.
+                    <td colspan="11" class="table-empty-cell">
+                        <i class="fa-solid fa-file-invoice text-3xl mb-2 block"></i>
+                        Belum ada data transaksi akhir. Silakan klik tombol <b>Tambah Transaksi Akhir</b> untuk mencatat perhitungan berat final.
                     </td>
                 </tr>
                 <?php else: ?>
@@ -114,7 +116,8 @@
                             } else {
                                 $initials = strtoupper(mb_substr($row['nama_petani'], 0, 2));
                             }
-                            $tglIso = preg_match('/^\d{4}-\d{2}-\d{2}/', (string)$row['tanggal'], $mTgl) ? $mTgl[0] : '';
+                            $tglIso       = preg_match('/^\d{4}-\d{2}-\d{2}/', (string)$row['tanggal'], $mTgl) ? $mTgl[0] : '';
+                            $tglFormatted = ($tglIso !== '') ? date('d/m/Y', strtotime($tglIso)) : '-';
                     ?>
                     <tr class="ta-row-item" data-tanggal="<?= htmlspecialchars($tglIso) ?>">
                         <td class="font-semibold text-slate-500"><?= $no++ ?></td>
@@ -123,38 +126,50 @@
                                 <div class="user-avatar-badge"><?= htmlspecialchars($initials) ?></div>
                                 <div class="user-name-cell">
                                     <h4><?= htmlspecialchars($row['nama_petani']) ?></h4>
-                                    <span class="badge-kode-ta"><?= htmlspecialchars($row['kode_transaksi']) ?></span>
+                                    <span class="badge-kode-transaksi"><?= htmlspecialchars($row['kode_transaksi']) ?></span>
                                 </div>
                             </div>
                         </td>
                         <td>
-                            <span class="badge-berat-setoran" title="Total berat dari Setoran Petani">
+                            <span class="badge-nama-tanaman" title="Diambil dari Master Tanaman">
+                                <i class="fa-solid fa-wheat-awn"></i>
+                                <?= htmlspecialchars($row['nama_tanaman']) ?>
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge-jumlah-setoran" title="Diambil dari jumlah berat di Setoran Petani">
                                 <i class="fa-solid fa-scale-balanced"></i>
-                                <?= htmlspecialchars($row['berat_setoran_str']) ?>
+                                <?= htmlspecialchars($row['jumlah_setoran']) ?>
                             </span>
                         </td>
                         <td>
-                            <span class="badge-rapaksi" title="Potongan rapaksi">
-                                <i class="fa-solid fa-minus"></i>
-                                <?= htmlspecialchars($row['rapaksi_str']) ?>
+                            <span class="badge-rapaksi" title="Nilai potongan rapaksi">
+                                <i class="fa-solid fa-scissors"></i>
+                                <?= htmlspecialchars($row['rapaksi']) ?>
                             </span>
                         </td>
                         <td>
-                            <span class="nik-badge" title="Berat Akhir = Berat Setoran - Rapaksi">
-                                <i class="fa-solid fa-weight-hanging text-agro-600"></i>
-                                <?= htmlspecialchars($row['berat_akhir_str']) ?>
+                            <span class="badge-berat-final" title="Hasil perhitungan Jumlah Setoran dikurangi Rapaksi">
+                                <i class="fa-solid fa-weight-scale"></i>
+                                <?= htmlspecialchars($row['berat_final']) ?>
                             </span>
                         </td>
                         <td>
-                            <span class="badge-harga-kg">
+                            <span class="badge-harga-kg" title="Harga per kilogram">
                                 <i class="fa-solid fa-tag"></i>
-                                <?= htmlspecialchars($row['harga_per_kg_str']) ?>
+                                <?= htmlspecialchars($row['harga_per_kg_fmt']) ?>
                             </span>
                         </td>
                         <td>
-                            <span class="badge-jumlah-uang" title="Jumlah Uang = Berat Akhir x Harga /Kg">
+                            <span class="badge-total-uang" title="Total uang (Berat Final dikali Harga per Kg)">
                                 <i class="fa-solid fa-money-bill-wave"></i>
-                                <?= htmlspecialchars($row['jumlah_uang_str']) ?>
+                                <?= htmlspecialchars($row['jumlah_uang_fmt']) ?>
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge-tanggal-ta">
+                                <i class="fa-regular fa-calendar-days text-slate-500"></i>
+                                <?= htmlspecialchars($tglFormatted) ?>
                             </span>
                         </td>
                         <td>
@@ -169,14 +184,14 @@
                                     type="button"
                                     class="btn-table-info"
                                     onclick="openModalInfoTransaksiAkhir(<?= (int)$row['id'] ?>)"
-                                    title="Lihat informasi lanjutan transaksi akhir"
+                                    title="Lihat info lengkap transaksi akhir"
                                 >
                                     <i class="fa-solid fa-circle-info"></i>
-                                    <span>Info</span>
+                                    <span>Info Lengkap</span>
                                 </button>
 
                                 <a
-                                    href="<?= htmlspecialchars(appUrl('transaksi-akhir/print-transaksi.php?id=' . (int)$row['id'])) ?>"
+                                    href="<?= htmlspecialchars(appUrl('transaksi-akhir/print-transaksi-akhir.php?id=' . (int)$row['id'])) ?>"
                                     target="_blank"
                                     rel="noopener"
                                     class="btn-table-print"
@@ -190,17 +205,27 @@
                                     type="button"
                                     class="btn-table-edit"
                                     onclick="openModalEditTransaksiAkhir(<?= (int)$row['id'] ?>)"
-                                    title="Edit atau hapus transaksi akhir"
+                                    title="Edit data transaksi akhir"
                                 >
                                     <i class="fa-solid fa-pen-to-square"></i>
                                     <span>Edit</span>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="btn-table-delete"
+                                    onclick="openModalDeleteTransaksiAkhir(<?= (int)$row['id'] ?>, '<?= htmlspecialchars(addslashes($row['kode_transaksi'])) ?>', '<?= htmlspecialchars(addslashes($row['nama_petani'])) ?>', '<?= htmlspecialchars(addslashes($row['berat_final'])) ?>')"
+                                    title="Hapus data transaksi akhir"
+                                >
+                                    <i class="fa-solid fa-trash-can"></i>
+                                    <span>Hapus</span>
                                 </button>
                             </div>
                         </td>
                     </tr>
                     <?php endforeach; ?>
                     <tr id="ta-empty-filter" class="hidden">
-                        <td colspan="9" class="table-empty-cell">
+                        <td colspan="11" class="table-empty-cell">
                             <i class="fa-solid fa-filter-circle-xmark text-3xl mb-2 block"></i>
                             Tidak ada data transaksi akhir yang cocok dengan pencarian atau rentang tanggal yang dipilih.
                         </td>

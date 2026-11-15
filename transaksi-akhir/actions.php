@@ -11,101 +11,103 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
     if ($action === 'add_transaksi_akhir') {
-        $setoranId  = (int)($_POST['setoran_id'] ?? 0);
-        $rapaksiRaw = trim((string)($_POST['rapaksi'] ?? '0'));
-        $rapaksi    = ($rapaksiRaw === '') ? 0.0 : round(parseDecimalTa($rapaksiRaw), 2);
-        $hargaPerKg = parseRupiahIntTa($_POST['harga_per_kg'] ?? '');
-        $tanggalRaw = trim((string)($_POST['tanggal'] ?? ''));
-        $tanggal    = preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggalRaw) ? $tanggalRaw : date('Y-m-d');
-        $keterangan = formatTitleCaseTa($_POST['keterangan'] ?? '');
+        $anggotaId   = (int)($_POST['anggota_id'] ?? 0);
+        $tanamanId   = (int)($_POST['tanaman_id'] ?? 0);
+        $tanggalRaw  = trim($_POST['tanggal'] ?? '');
+        $rapaksiNum  = parseAngkaNonNegatifStrict($_POST['rapaksi'] ?? '');
+        $hargaPerKg  = parseHargaPerKgInt($_POST['harga_per_kg'] ?? '');
+        $keterangan  = formatTitleCaseSetoran($_POST['keterangan'] ?? '');
 
-        if ($setoranId <= 0) {
-            $feedbackMessage = "Data Setoran Petani wajib dipilih terlebih dahulu.";
+        $tanggal = preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggalRaw) ? $tanggalRaw : date('Y-m-d');
+
+        if ($anggotaId <= 0) {
+            $feedbackMessage = "Nama Petani wajib dipilih dari daftar Anggota Petani.";
             $feedbackType    = "danger";
-        } elseif ($rapaksi < 0) {
-            $feedbackMessage = "Rapaksi tidak boleh bernilai negatif.";
+        } elseif ($tanamanId <= 0) {
+            $feedbackMessage = "Tanaman wajib dipilih dari Master Tanaman.";
             $feedbackType    = "danger";
-        } elseif ($hargaPerKg <= 0) {
-            $feedbackMessage = "Harga /Kg wajib diisi lebih dari Rp 0.";
+        } elseif ($rapaksiNum === null) {
+            $feedbackMessage = "Nilai Rapaksi wajib diisi dengan angka minimal 0 Kg.";
+            $feedbackType    = "danger";
+        } elseif ($hargaPerKg === null) {
+            $feedbackMessage = "Harga (/Kg) wajib diisi dengan nominal lebih dari Rp 0.";
             $feedbackType    = "danger";
         } else {
-            // Ambil referensi setoran_petani
-            $setoranRow = null;
-            $stmtSet = $conn->prepare("
-                SELECT s.id, s.kode_setoran, s.anggota_id,
-                       COALESCE(a.nama_petani, s.nama_petani) AS nama_petani,
-                       s.jumlah_berat
-                FROM setoran_petani s
-                LEFT JOIN anggota_petani a ON s.anggota_id = a.id
-                WHERE s.id = ?
-                LIMIT 1
-            ");
-            if ($stmtSet) {
-                $stmtSet->bind_param("i", $setoranId);
-                $stmtSet->execute();
-                $resSet     = $stmtSet->get_result();
-                $setoranRow = $resSet ? $resSet->fetch_assoc() : null;
-                $stmtSet->close();
+            $petaniRow  = null;
+            $cekAnggota = $conn->prepare("SELECT id, nama_petani FROM anggota_petani WHERE id = ? LIMIT 1");
+            if ($cekAnggota) {
+                $cekAnggota->bind_param("i", $anggotaId);
+                $cekAnggota->execute();
+                $resAnggota = $cekAnggota->get_result();
+                $petaniRow  = $resAnggota ? $resAnggota->fetch_assoc() : null;
+                $cekAnggota->close();
             }
 
-            if (!$setoranRow) {
-                $feedbackMessage = "Data Setoran Petani yang dipilih tidak ditemukan.";
+            $tanamanRow = null;
+            $cekTanaman = $conn->prepare("SELECT id, nama_produk FROM master_produk WHERE id = ? AND jenis = 'Tanaman' LIMIT 1");
+            if ($cekTanaman) {
+                $cekTanaman->bind_param("i", $tanamanId);
+                $cekTanaman->execute();
+                $resTanaman = $cekTanaman->get_result();
+                $tanamanRow = $resTanaman ? $resTanaman->fetch_assoc() : null;
+                $cekTanaman->close();
+            }
+
+            if (!$petaniRow) {
+                $feedbackMessage = "Anggota petani yang dipilih tidak ditemukan pada Daftar Anggota Petani.";
+                $feedbackType    = "danger";
+            } elseif (!$tanamanRow) {
+                $feedbackMessage = "Tanaman yang dipilih tidak ditemukan pada Master Tanaman.";
                 $feedbackType    = "danger";
             } else {
-                // Pastikan setoran ini belum memiliki transaksi akhir
-                $dupCount = 0;
-                $stmtDup = $conn->prepare("SELECT COUNT(*) AS cnt FROM transaksi_akhir WHERE setoran_id = ?");
-                if ($stmtDup) {
-                    $stmtDup->bind_param("i", $setoranId);
-                    $stmtDup->execute();
-                    $resDup = $stmtDup->get_result();
-                    if ($resDup && ($rDup = $resDup->fetch_assoc())) {
-                        $dupCount = (int)$rDup['cnt'];
-                    }
-                    $stmtDup->close();
-                }
+                $rekapSetoran     = getRekapSetoranPerAnggota($conn);
+                $rekapPetani      = $rekapSetoran[$anggotaId] ?? null;
+                $beratPerTanaman  = $rekapPetani['berat_per_tanaman'] ?? [];
+                $jumlahSetoranNum = isset($beratPerTanaman[$tanamanId])
+                    ? round((float)$beratPerTanaman[$tanamanId], 2)
+                    : 0.0;
 
-                $beratSetoran = round(parseDecimalTa($setoranRow['jumlah_berat']), 2);
-
-                if ($dupCount > 0) {
-                    $feedbackMessage = "Setoran {$setoranRow['kode_setoran']} sudah diproses di Transaksi Akhir. Gunakan tombol Edit jika ingin mengubahnya.";
+                if ($jumlahSetoranNum <= 0) {
+                    $namaTanamErr = formatTitleCaseSetoran($tanamanRow['nama_produk']);
+                    $feedbackMessage = "Sisa setoran tanaman {$namaTanamErr} untuk petani yang dipilih adalah 0 Kg (belum ada setoran atau sudah habis tercatat pada Transaksi Akhir).";
                     $feedbackType    = "danger";
-                } elseif ($beratSetoran <= 0) {
-                    $feedbackMessage = "Berat setoran pada data yang dipilih tidak valid (0 Kg).";
-                    $feedbackType    = "danger";
-                } elseif ($rapaksi > $beratSetoran) {
-                    $feedbackMessage = "Rapaksi (" . formatBeratTaStr($rapaksi) . ") tidak boleh melebihi Berat Setoran (" . formatBeratTaStr($beratSetoran) . ").";
+                } elseif ($rapaksiNum > $jumlahSetoranNum) {
+                    $feedbackMessage = "Nilai rapaksi (" . formatBeratSetoranStr($rapaksiNum) . ") tidak boleh melebihi jumlah setoran (" . formatBeratSetoranStr($jumlahSetoranNum) . ").";
                     $feedbackType    = "danger";
                 } else {
                     if ($keterangan === '') {
                         $keterangan = '-';
                     }
-                    $keterangan    = mb_substr($keterangan, 0, 255, 'UTF-8');
-                    $anggotaId     = !empty($setoranRow['anggota_id']) ? (int)$setoranRow['anggota_id'] : null;
-                    $namaPetani    = mb_substr(formatTitleCaseTa($setoranRow['nama_petani']), 0, 100, 'UTF-8');
-                    $beratAkhir    = round(max(0.0, $beratSetoran - $rapaksi), 2);
-                    $jumlahUang    = (int)round($beratAkhir * $hargaPerKg);
-                    $kodeTransaksi = generateKodeTransaksiAkhir($conn, $tanggal);
-                    $dicatatOleh   = mb_substr(formatTitleCaseTa($_SESSION['nama'] ?? ($_SESSION['username'] ?? '-')), 0, 100, 'UTF-8');
+                    $keterangan       = mb_substr($keterangan, 0, 255, 'UTF-8');
+                    $namaPetani       = mb_substr(formatTitleCaseSetoran($petaniRow['nama_petani']), 0, 100, 'UTF-8');
+                    $namaTanaman      = mb_substr(formatTitleCaseSetoran($tanamanRow['nama_produk']), 0, 100, 'UTF-8');
+                    $jumlahSetoranStr = formatBeratSetoranStr($jumlahSetoranNum);
+                    $rapaksiStr       = formatBeratSetoranStr($rapaksiNum);
+                    $beratFinalNum    = max(0.0, round($jumlahSetoranNum - $rapaksiNum, 2));
+                    $beratFinalStr    = formatBeratSetoranStr($beratFinalNum);
+                    $jumlahUang       = (int)round($beratFinalNum * $hargaPerKg);
+                    $kodeTransaksi    = generateKodeTransaksiAkhir($conn, $tanggal);
+                    $dicatatOleh      = mb_substr(formatTitleCaseSetoran($_SESSION['nama'] ?? ($_SESSION['username'] ?? '-')), 0, 100, 'UTF-8');
 
                     $insStmt = $conn->prepare("
                         INSERT INTO transaksi_akhir (
-                            kode_transaksi, setoran_id, anggota_id, nama_petani,
-                            berat_setoran, rapaksi, berat_akhir,
-                            harga_per_kg, jumlah_uang, tanggal, keterangan, dicatat_oleh
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            kode_transaksi, anggota_id, nama_petani, tanaman_id, nama_tanaman,
+                            jumlah_setoran, rapaksi, berat_final, harga_per_kg, jumlah_uang,
+                            tanggal, keterangan, dicatat_oleh
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ");
 
                     if ($insStmt) {
                         $insStmt->bind_param(
-                            "siisdddiisss",
+                            "sisissssiisss",
                             $kodeTransaksi,
-                            $setoranId,
                             $anggotaId,
                             $namaPetani,
-                            $beratSetoran,
-                            $rapaksi,
-                            $beratAkhir,
+                            $tanamanId,
+                            $namaTanaman,
+                            $jumlahSetoranStr,
+                            $rapaksiStr,
+                            $beratFinalStr,
                             $hargaPerKg,
                             $jumlahUang,
                             $tanggal,
@@ -115,7 +117,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                         if ($insStmt->execute()) {
                             $insStmt->close();
-                            header('Location: ' . appUrl('transaksi-akhir/?status=added&name=' . urlencode($namaPetani) . '&uang=' . urlencode(formatRupiahTaStr($jumlahUang))));
+                            header('Location: ' . appUrl('transaksi-akhir/?status=added&name=' . urlencode($namaPetani) . '&berat=' . urlencode($beratFinalStr)));
                             exit;
                         } else {
                             $feedbackMessage = dbErrorUntukPengguna('simpan transaksi akhir', $conn->error);
@@ -130,116 +132,147 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     } elseif ($action === 'edit_transaksi_akhir') {
-        $id         = (int)($_POST['id'] ?? 0);
-        $setoranId  = (int)($_POST['setoran_id'] ?? 0);
-        $rapaksiRaw = trim((string)($_POST['rapaksi'] ?? '0'));
-        $rapaksi    = ($rapaksiRaw === '') ? 0.0 : round(parseDecimalTa($rapaksiRaw), 2);
-        $hargaPerKg = parseRupiahIntTa($_POST['harga_per_kg'] ?? '');
-        $tanggalRaw = trim((string)($_POST['tanggal'] ?? ''));
-        $tanggal    = preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggalRaw) ? $tanggalRaw : date('Y-m-d');
-        $keterangan = formatTitleCaseTa($_POST['keterangan'] ?? '');
+        $id          = (int)($_POST['id'] ?? 0);
+        $anggotaId   = (int)($_POST['anggota_id'] ?? 0);
+        $tanamanId   = (int)($_POST['tanaman_id'] ?? 0);
+        $tanggalRaw  = trim($_POST['tanggal'] ?? '');
+        $rapaksiNum  = parseAngkaNonNegatifStrict($_POST['rapaksi'] ?? '');
+        $hargaPerKg  = parseHargaPerKgInt($_POST['harga_per_kg'] ?? '');
+        $keterangan  = formatTitleCaseSetoran($_POST['keterangan'] ?? '');
 
-        if ($id <= 0 || $setoranId <= 0) {
-            $feedbackMessage = "ID transaksi dan Data Setoran Petani wajib dipilih.";
+        $tanggal = preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggalRaw) ? $tanggalRaw : date('Y-m-d');
+
+        if ($id <= 0) {
+            $feedbackMessage = "ID transaksi akhir tidak valid.";
             $feedbackType    = "danger";
-        } elseif ($rapaksi < 0) {
-            $feedbackMessage = "Rapaksi tidak boleh bernilai negatif.";
+        } elseif ($anggotaId <= 0) {
+            $feedbackMessage = "Nama Petani wajib dipilih dari daftar Anggota Petani.";
             $feedbackType    = "danger";
-        } elseif ($hargaPerKg <= 0) {
-            $feedbackMessage = "Harga /Kg wajib diisi lebih dari Rp 0.";
+        } elseif ($tanamanId <= 0) {
+            $feedbackMessage = "Tanaman wajib dipilih dari Master Tanaman.";
+            $feedbackType    = "danger";
+        } elseif ($rapaksiNum === null) {
+            $feedbackMessage = "Nilai Rapaksi wajib diisi dengan angka minimal 0 Kg.";
+            $feedbackType    = "danger";
+        } elseif ($hargaPerKg === null) {
+            $feedbackMessage = "Harga (/Kg) wajib diisi dengan nominal lebih dari Rp 0.";
             $feedbackType    = "danger";
         } else {
-            $setoranRow = null;
-            $stmtSet = $conn->prepare("
-                SELECT s.id, s.kode_setoran, s.anggota_id,
-                       COALESCE(a.nama_petani, s.nama_petani) AS nama_petani,
-                       s.jumlah_berat
-                FROM setoran_petani s
-                LEFT JOIN anggota_petani a ON s.anggota_id = a.id
-                WHERE s.id = ?
-                LIMIT 1
-            ");
-            if ($stmtSet) {
-                $stmtSet->bind_param("i", $setoranId);
-                $stmtSet->execute();
-                $resSet     = $stmtSet->get_result();
-                $setoranRow = $resSet ? $resSet->fetch_assoc() : null;
-                $stmtSet->close();
+            $existing    = null;
+            $cekExisting = $conn->prepare("SELECT id, anggota_id, tanaman_id, jumlah_setoran FROM transaksi_akhir WHERE id = ? LIMIT 1");
+            if ($cekExisting) {
+                $cekExisting->bind_param("i", $id);
+                $cekExisting->execute();
+                $resExisting = $cekExisting->get_result();
+                $existing    = $resExisting ? $resExisting->fetch_assoc() : null;
+                $cekExisting->close();
             }
 
-            if (!$setoranRow) {
-                $feedbackMessage = "Data Setoran Petani yang dipilih tidak ditemukan.";
+            if (!$existing) {
+                $feedbackMessage = "Data transaksi akhir yang akan diubah tidak ditemukan.";
                 $feedbackType    = "danger";
             } else {
-                $dupCount = 0;
-                $stmtDup = $conn->prepare("SELECT COUNT(*) AS cnt FROM transaksi_akhir WHERE setoran_id = ? AND id != ?");
-                if ($stmtDup) {
-                    $stmtDup->bind_param("ii", $setoranId, $id);
-                    $stmtDup->execute();
-                    $resDup = $stmtDup->get_result();
-                    if ($resDup && ($rDup = $resDup->fetch_assoc())) {
-                        $dupCount = (int)$rDup['cnt'];
-                    }
-                    $stmtDup->close();
+                $petaniRow  = null;
+                $cekAnggota = $conn->prepare("SELECT id, nama_petani FROM anggota_petani WHERE id = ? LIMIT 1");
+                if ($cekAnggota) {
+                    $cekAnggota->bind_param("i", $anggotaId);
+                    $cekAnggota->execute();
+                    $resAnggota = $cekAnggota->get_result();
+                    $petaniRow  = $resAnggota ? $resAnggota->fetch_assoc() : null;
+                    $cekAnggota->close();
                 }
 
-                $beratSetoran = round(parseDecimalTa($setoranRow['jumlah_berat']), 2);
+                $tanamanRow = null;
+                $cekTanaman = $conn->prepare("SELECT id, nama_produk FROM master_produk WHERE id = ? AND jenis = 'Tanaman' LIMIT 1");
+                if ($cekTanaman) {
+                    $cekTanaman->bind_param("i", $tanamanId);
+                    $cekTanaman->execute();
+                    $resTanaman = $cekTanaman->get_result();
+                    $tanamanRow = $resTanaman ? $resTanaman->fetch_assoc() : null;
+                    $cekTanaman->close();
+                }
 
-                if ($dupCount > 0) {
-                    $feedbackMessage = "Setoran {$setoranRow['kode_setoran']} sudah terhubung dengan transaksi akhir lainnya.";
+                if (!$petaniRow) {
+                    $feedbackMessage = "Anggota petani yang dipilih tidak ditemukan pada Daftar Anggota Petani.";
                     $feedbackType    = "danger";
-                } elseif ($rapaksi > $beratSetoran) {
-                    $feedbackMessage = "Rapaksi (" . formatBeratTaStr($rapaksi) . ") tidak boleh melebihi Berat Setoran (" . formatBeratTaStr($beratSetoran) . ").";
+                } elseif (!$tanamanRow) {
+                    $feedbackMessage = "Tanaman yang dipilih tidak ditemukan pada Master Tanaman.";
                     $feedbackType    = "danger";
                 } else {
-                    if ($keterangan === '') {
-                        $keterangan = '-';
+                    $rekapSetoran     = getRekapSetoranPerAnggota($conn, $id);
+                    $rekapPetani      = $rekapSetoran[$anggotaId] ?? null;
+                    $beratPerTanaman  = $rekapPetani['berat_per_tanaman'] ?? [];
+                    $jumlahSetoranNum = isset($beratPerTanaman[$tanamanId])
+                        ? round((float)$beratPerTanaman[$tanamanId], 2)
+                        : 0.0;
+
+                    // Fallback ke nilai setoran tersimpan jika petani & tanaman tetap sama dan data setoran kosong
+                    if (
+                        $jumlahSetoranNum <= 0
+                        && $anggotaId === (int)$existing['anggota_id']
+                        && $tanamanId === (int)($existing['tanaman_id'] ?? 0)
+                    ) {
+                        $jumlahSetoranNum = round(parseBeratSetoranFloat($existing['jumlah_setoran']), 2);
                     }
-                    $keterangan  = mb_substr($keterangan, 0, 255, 'UTF-8');
-                    $anggotaId   = !empty($setoranRow['anggota_id']) ? (int)$setoranRow['anggota_id'] : null;
-                    $namaPetani  = mb_substr(formatTitleCaseTa($setoranRow['nama_petani']), 0, 100, 'UTF-8');
-                    $beratAkhir  = round(max(0.0, $beratSetoran - $rapaksi), 2);
-                    $jumlahUang  = (int)round($beratAkhir * $hargaPerKg);
-                    $dicatatOleh = mb_substr(formatTitleCaseTa($_SESSION['nama'] ?? ($_SESSION['username'] ?? '-')), 0, 100, 'UTF-8');
 
-                    $updStmt = $conn->prepare("
-                        UPDATE transaksi_akhir
-                        SET setoran_id = ?, anggota_id = ?, nama_petani = ?,
-                            berat_setoran = ?, rapaksi = ?, berat_akhir = ?,
-                            harga_per_kg = ?, jumlah_uang = ?, tanggal = ?,
-                            keterangan = ?, dicatat_oleh = ?
-                        WHERE id = ?
-                    ");
-
-                    if ($updStmt) {
-                        $updStmt->bind_param(
-                            "iisdddiisssi",
-                            $setoranId,
-                            $anggotaId,
-                            $namaPetani,
-                            $beratSetoran,
-                            $rapaksi,
-                            $beratAkhir,
-                            $hargaPerKg,
-                            $jumlahUang,
-                            $tanggal,
-                            $keterangan,
-                            $dicatatOleh,
-                            $id
-                        );
-
-                        if ($updStmt->execute()) {
-                            $updStmt->close();
-                            header('Location: ' . appUrl('transaksi-akhir/?status=updated&name=' . urlencode($namaPetani) . '&uang=' . urlencode(formatRupiahTaStr($jumlahUang))));
-                            exit;
-                        } else {
-                            $feedbackMessage = dbErrorUntukPengguna('perbarui transaksi akhir', $conn->error);
-                            $feedbackType    = "danger";
-                            $updStmt->close();
-                        }
-                    } else {
-                        $feedbackMessage = dbErrorUntukPengguna('siapkan query edit transaksi akhir', $conn->error);
+                    if ($jumlahSetoranNum <= 0) {
+                        $namaTanamErr = formatTitleCaseSetoran($tanamanRow['nama_produk']);
+                        $feedbackMessage = "Sisa setoran tanaman {$namaTanamErr} untuk petani yang dipilih adalah 0 Kg.";
                         $feedbackType    = "danger";
+                    } elseif ($rapaksiNum > $jumlahSetoranNum) {
+                        $feedbackMessage = "Nilai rapaksi (" . formatBeratSetoranStr($rapaksiNum) . ") tidak boleh melebihi jumlah setoran (" . formatBeratSetoranStr($jumlahSetoranNum) . ").";
+                        $feedbackType    = "danger";
+                    } else {
+                        if ($keterangan === '') {
+                            $keterangan = '-';
+                        }
+                        $keterangan       = mb_substr($keterangan, 0, 255, 'UTF-8');
+                        $namaPetani       = mb_substr(formatTitleCaseSetoran($petaniRow['nama_petani']), 0, 100, 'UTF-8');
+                        $namaTanaman      = mb_substr(formatTitleCaseSetoran($tanamanRow['nama_produk']), 0, 100, 'UTF-8');
+                        $jumlahSetoranStr = formatBeratSetoranStr($jumlahSetoranNum);
+                        $rapaksiStr       = formatBeratSetoranStr($rapaksiNum);
+                        $beratFinalNum    = max(0.0, round($jumlahSetoranNum - $rapaksiNum, 2));
+                        $beratFinalStr    = formatBeratSetoranStr($beratFinalNum);
+                        $jumlahUang       = (int)round($beratFinalNum * $hargaPerKg);
+
+                        $updStmt = $conn->prepare("
+                            UPDATE transaksi_akhir
+                            SET anggota_id = ?, nama_petani = ?, tanaman_id = ?, nama_tanaman = ?,
+                                jumlah_setoran = ?, rapaksi = ?, berat_final = ?, harga_per_kg = ?, jumlah_uang = ?,
+                                tanggal = ?, keterangan = ?
+                            WHERE id = ?
+                        ");
+
+                        if ($updStmt) {
+                            $updStmt->bind_param(
+                                "isissssiissi",
+                                $anggotaId,
+                                $namaPetani,
+                                $tanamanId,
+                                $namaTanaman,
+                                $jumlahSetoranStr,
+                                $rapaksiStr,
+                                $beratFinalStr,
+                                $hargaPerKg,
+                                $jumlahUang,
+                                $tanggal,
+                                $keterangan,
+                                $id
+                            );
+
+                            if ($updStmt->execute()) {
+                                $updStmt->close();
+                                header('Location: ' . appUrl('transaksi-akhir/?status=updated&name=' . urlencode($namaPetani) . '&berat=' . urlencode($beratFinalStr)));
+                                exit;
+                            } else {
+                                $feedbackMessage = dbErrorUntukPengguna('perbarui transaksi akhir', $conn->error);
+                                $feedbackType    = "danger";
+                                $updStmt->close();
+                            }
+                        } else {
+                            $feedbackMessage = dbErrorUntukPengguna('siapkan query edit transaksi akhir', $conn->error);
+                            $feedbackType    = "danger";
+                        }
                     }
                 }
             }
@@ -255,7 +288,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     header('Location: ' . appUrl('transaksi-akhir/?status=deleted'));
                     exit;
                 } else {
-                    $feedbackMessage = dbErrorUntukPengguna('hapus transaksi akhir', $conn->error);
+                    $feedbackMessage = dbErrorUntukPengguna('hapus data transaksi akhir', $conn->error);
                     $feedbackType    = "danger";
                     $delStmt->close();
                 }
