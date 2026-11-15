@@ -54,8 +54,6 @@ require_once ROOT_PATH . '/layouts/sidebar.php';
     <main class="app-content-area">
         <div class="user-page-wrapper fade-in">
 
-            <?php require __DIR__ . '/views/tabs.php'; ?>
-
             <?php if ($activeView === 'kelola'): ?>
                 <?php require __DIR__ . '/views/view-stok.php'; ?>
             <?php elseif ($activeView === 'riwayat_stok'): ?>
